@@ -10,10 +10,9 @@ export default function Error({
       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold">
         Interrupted
       </p>
-      <h1 className="mt-2 font-display text-4xl">Something went wrong</h1>
+      <h1 className="mt-2 font-display text-4xl">The programme did not load</h1>
       <p className="mt-4 max-w-lg text-lg text-ink-soft">
-        We could not load movies from the archive. Check your connection and try
-        again.
+        Movies could not be fetched. Try again in a moment.
       </p>
       <button
         type="button"

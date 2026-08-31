@@ -1,8 +1,10 @@
+import LoadingSkeleton from "@/components/LoadingSkeleton";
+
 export default function Loading() {
   return (
     <main>
-      <h1>Searching for movies...</h1>
-      <p>⏳ Please wait...</p>
+      <p className="mb-6 font-display text-3xl">Searching the programme…</p>
+      <LoadingSkeleton label="Searching for movies" />
     </main>
   );
 }

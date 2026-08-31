@@ -1,5 +1,6 @@
 import { searchMovies } from "@/services/movieApi";
 import MovieGrid from "@/components/MovieGrid";
+import SectionHeading from "@/components/SectionHeading";
 
 type SearchPageProps = {
   searchParams: Promise<{
@@ -7,17 +8,18 @@ type SearchPageProps = {
   }>;
 };
 
-export default async function SearchPage({
-  searchParams,
-}: SearchPageProps) {
+export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const query = params.q;
 
   if (!query) {
     return (
       <main>
-        <h1>Search Movies</h1>
-        <p>Enter a movie name to search.</p>
+        <SectionHeading kicker="Catalogue" title="Search movies" />
+        <p className="max-w-xl text-lg text-ink-soft">
+          Enter a title in the masthead to look up a film. Try a specific name
+          rather than a genre.
+        </p>
       </main>
     );
   }
@@ -27,15 +29,24 @@ export default async function SearchPage({
   if (data.results.length === 0) {
     return (
       <main>
-        <h1>Search results for &quot;{query}&quot;</h1>
-        <p>No movies found.</p>
+        <SectionHeading
+          kicker="No print"
+          title={`Nothing found for “${query}”`}
+        />
+        <p className="max-w-xl text-lg text-ink-soft">
+          That title is not in this programme. Check the spelling, or search for
+          another film.
+        </p>
       </main>
     );
   }
 
   return (
     <main>
-      <h1>Search results for &quot;{query}&quot;</h1>
+      <SectionHeading
+        kicker="Search results"
+        title={`Titles matching “${query}”`}
+      />
       <MovieGrid movies={data.results} />
     </main>
   );

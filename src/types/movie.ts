@@ -38,14 +38,17 @@ export type Movie = {
   // The movie's average rating.
   vote_average: number;
 
-  // The movie's popularity score.
-  popularity: number;
+  // The movie's popularity score (present on detail responses).
+  popularity?: number;
 
-  // The movie's runtime in minutes.
-  runtime: number;
+  // The movie's runtime in minutes (present on detail responses).
+  runtime?: number;
 
-  // The movie's genres.
-  genres: Genre[];
+  // Full genre objects from the movie-details endpoint.
+  genres?: Genre[];
+
+  // Genre ids from list/search endpoints.
+  genre_ids?: number[];
 };
 
 // Describes one movie genre.

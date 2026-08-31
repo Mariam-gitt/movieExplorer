@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #f3eee4;
+  --paper-raised: #faf6ee;
+  --ink: #1c1410;
+  --ink-soft: #5c5148;
+  --rule: #c9bba8;
+  --burgundy: #7a2e2a;
+  --burgundy-deep: #5c201d;
+  --gold: #a67c3d;
+  --stamp: #f7efe0;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-burgundy: var(--burgundy);
+  --color-burgundy-deep: var(--burgundy-deep);
+  --color-gold: var(--gold);
+  --color-stamp: var(--stamp);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #1a1613;
+    --paper-raised: #241f1a;
+    --ink: #f3eee4;
+    --ink-soft: #c4b8a8;
+    --rule: #4a4036;
+    --burgundy: #d4a09a;
+    --burgundy-deep: #e8c4bf;
+    --gold: #d4b483;
+    --stamp: #2a241e;
   }
 }
 
+html {
+  background: var(--paper);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(ellipse at top, color-mix(in oklab, var(--gold) 8%, transparent), transparent 46%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 47px,
+      color-mix(in oklab, var(--rule) 28%, transparent) 48px
+    );
+  color: var(--ink);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--burgundy) 25%, var(--paper));
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--burgundy);
+  outline-offset: 3px;
 }

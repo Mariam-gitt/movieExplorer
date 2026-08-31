@@ -1,91 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import MovieGrid from "@/components/MovieGrid";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
+import SectionHeading from "@/components/SectionHeading";
 import type { Movie } from "@/types/movie";
 import { getMovieDetails } from "@/services/movieApi";
+import { getFavoriteIds, subscribeToFavorites } from "@/utils/favorites";
 
 export default function FavoritesPage() {
-  // const [movies, setMovies] = useState<Movie[]>([]);
+  const favoriteIds = useSyncExternalStore(
+    subscribeToFavorites,
+    getFavoriteIds,
+    () => [] as number[]
+  );
+  const [movies, setMovies] = useState<Movie[] | null>(null);
 
-  // Store the movies that we successfully fetch.
-const [movies, setMovies] = useState<Movie[]>([]);
+  useEffect(() => {
+    if (favoriteIds.length === 0) return;
 
-// Track whether we're still fetching the favorite movies.
-const [loading, setLoading] = useState(true);
+    let cancelled = false;
 
-//   useEffect(() => {
-//     const storedFavorites = localStorage.getItem("favorites");
-
-//     if (!storedFavorites) return;
-
-//     const favoriteIds: number[] = JSON.parse(storedFavorites);
-
-//     // We'll fetch the movies here next.
-//   }, []);
-
-useEffect(() => {
-  const storedFavorites = localStorage.getItem("favorites");
-
-  if (!storedFavorites) {
-    setLoading(false);
-    return;
-  }
-
-  const favoriteIds: number[] = JSON.parse(storedFavorites);
-
-  async function loadFavorites() {
-    try {
-      // Fetch all favorite movies.
-      const favoriteMovies = await Promise.all(
-        favoriteIds.map((id) => getMovieDetails(id.toString()))
-      );
-
-      // Store the fetched movies in React state.
-      setMovies(favoriteMovies);
-    } catch (error) {
-      console.error("Failed to load favorites:", error);
-    } finally {
-      // We are finished loading.
-      setLoading(false);
+    async function loadFavorites() {
+      try {
+        const favoriteMovies = await Promise.all(
+          favoriteIds.map((id) => getMovieDetails(id.toString()))
+        );
+        if (!cancelled) setMovies(favoriteMovies);
+      } catch (error) {
+        console.error("Failed to load favorites:", error);
+        if (!cancelled) setMovies([]);
+      }
     }
-  }
 
-  loadFavorites();
-}, []);
+    loadFavorites();
 
-//   return (
-   
-//   <main>
-//     {/* Page heading. */}
-//     <h1>My Favorites</h1>
+    return () => {
+      cancelled = true;
+    };
+  }, [favoriteIds]);
 
-//     {/* 
-//       If there are no favorite movies, show a message.
-//       Otherwise, display the movie grid.
-//     */}
-//     {movies.length === 0 ? (
-//       <p>You haven't added any movies to your favorites yet.</p>
-//     ) : (
-//       <MovieGrid movies={movies} />
-//     )}
-//   </main>
-// );
+  return (
+    <main>
+      <SectionHeading kicker="Your list" title="Favorites" />
 
-return (
-  <main>
-    {/* Page heading. */}
-    <h1>My Favorites</h1>
-
-    {/* Show a message while favorite movies are being fetched. */}
-    {loading ? (
-      <p>Loading your favorites...</p>
-    ) : movies.length === 0 ? (
-      <p>You haven't added any movies to your favorites yet.</p>
-    ) : (
-      <MovieGrid movies={movies} />
-    )}
-  </main>
-);
-
+      {favoriteIds.length === 0 ? (
+        <p className="max-w-xl text-lg text-ink-soft">
+          Nothing saved yet. Open a film and choose{" "}
+          <span className="font-semibold text-ink">Save</span> on a card to keep
+          it here.
+        </p>
+      ) : movies == null ? (
+        <LoadingSkeleton label="Loading your favorites" />
+      ) : (
+        <MovieGrid movies={movies} />
+      )}
+    </main>
+  );
 }

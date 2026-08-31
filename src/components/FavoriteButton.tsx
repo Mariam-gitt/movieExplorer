@@ -1,51 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import type { Movie } from "@/types/movie";
+import {
+  getFavoriteIds,
+  setFavoriteIds,
+  subscribeToFavorites,
+} from "@/utils/favorites";
 
 type FavoriteButtonProps = {
   movie: Movie;
 };
 
-export default function FavoriteButton({
-  movie,
-}: FavoriteButtonProps) {
-  const [isFavorite, setIsFavorite] = useState(false);
+export default function FavoriteButton({ movie }: FavoriteButtonProps) {
+  const getServerSnapshot = useCallback(() => [] as number[], []);
+  
+  const favorites = useSyncExternalStore(
+    subscribeToFavorites,
+    getFavoriteIds,
+    getServerSnapshot
+  );
+  const isFavorite = favorites.includes(movie.id);
 
   function handleFavorite() {
-  const storedFavorites = localStorage.getItem("favorites");
-
-  const favorites: number[] = storedFavorites
-    ? JSON.parse(storedFavorites)
-    : [];
-
-  if (favorites.includes(movie.id)) {
-    const updatedFavorites = favorites.filter(
-      (id) => id !== movie.id
-    );
-
-    localStorage.setItem(
-      "favorites",
-      JSON.stringify(updatedFavorites)
-    );
-
-    setIsFavorite(false);
-  } else {
-    const updatedFavorites = [...favorites, movie.id];
-
-    localStorage.setItem(
-      "favorites",
-      JSON.stringify(updatedFavorites)
-    );
-
-    setIsFavorite(true);
-  }
+    if (isFavorite) {
+      setFavoriteIds(favorites.filter((id) => id !== movie.id));
+    } else {
+      setFavoriteIds([...favorites, movie.id]);
+    }
   }
 
   return (
-    <button onClick={handleFavorite}>
-      {isFavorite ? "❤️" : "🤍"}
+    <button
+      type="button"
+      onClick={handleFavorite}
+      aria-pressed={isFavorite}
+      aria-label={
+        isFavorite
+          ? `Remove ${movie.title} from favorites`
+          : `Add ${movie.title} to favorites`
+      }
+      className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft hover:text-burgundy"
+    >
+      {isFavorite ? "In favorites" : "Save"}
     </button>
   );
 }
-

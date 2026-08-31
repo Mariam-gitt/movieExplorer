@@ -1,192 +1,103 @@
-
-// // import {
-// //   getPopularMovies,
-// //   getTrendingMovies,
-// //   getTopRatedMovies,
-// // } from "@/services/movieApi";
-
-// import {
-//   getPopularMovies,
-//   getTrendingMovies,
-//   getTopRatedMovies,
-//   getUpcomingMovies,
-//   getNowPlayingMovies,
-// } from "@/services/movieApi";
-
-// import MovieGrid from "@/components/MovieGrid";
-
-// export default async function Home() {
-//   // const popular = await getPopularMovies();
-//   // const trending = await getTrendingMovies();
-//   // const topRated = await getTopRatedMovies();
-
-//   const popular = await getPopularMovies();
-// const trending = await getTrendingMovies();
-// const topRated = await getTopRatedMovies();
-// const upcoming = await getUpcomingMovies();
-// const nowPlaying = await getNowPlayingMovies();
-
-//   return (
-//     <main>
-//       <section>
-//         <h1>Trending Movies</h1>
-//         <MovieGrid movies={trending.results} />
-//       </section>
-
-//       <section>
-//         <h1>Popular Movies</h1>
-//         <MovieGrid movies={popular.results} />
-//       </section>
-
-//       <section>
-//         <h1>Top Rated Movies</h1>
-//         <MovieGrid movies={topRated.results} />
-//       </section>
-//     </main>
-//   );
-// }
-
-// <section>
-//   <h1>Upcoming Movies</h1>
-//   <MovieGrid movies={upcoming.results} />
-// </section>
-
-// <section>
-//   <h1>Now Playing</h1>
-//   <MovieGrid movies={nowPlaying.results} />
-// </section>
-
-
-// Next.js Image component.
-// It optimizes images and handles image loading for us.
 import Image from "next/image";
-
-// Next.js Link component.
-// It lets us navigate between pages without a full browser reload.
 import Link from "next/link";
-
-// Functions that fetch different categories of movies from TMDB.
 import {
-  getPopularMovies,
-  getTrendingMovies,
-  getTopRatedMovies,
-  getUpcomingMovies,
   getNowPlayingMovies,
+  getPopularMovies,
+  getTopRatedMovies,
+  getTrendingMovies,
+  getUpcomingMovies,
 } from "@/services/movieApi";
-
-// Reusable component that displays a list of movie cards.
 import MovieGrid from "@/components/MovieGrid";
+import SectionHeading from "@/components/SectionHeading";
+import { getMovieYear, posterUrl } from "@/utils/movieMeta";
 
-// This is our homepage Server Component.
-// "async" allows us to use "await" while fetching movie data.
 export default async function Home() {
-  // Fetch trending movies from TMDB.
   const trending = await getTrendingMovies();
-
-  // Take the first trending movie and use it as our featured movie.
-  const featuredMovie = trending.results[0];
-
-  // Fetch popular movies from TMDB.
   const popular = await getPopularMovies();
-
-  // Fetch top-rated movies from TMDB.
   const topRated = await getTopRatedMovies();
-
-  // Fetch upcoming movies from TMDB.
   const upcoming = await getUpcomingMovies();
-
-  // Fetch movies that are currently playing in cinemas.
   const nowPlaying = await getNowPlayingMovies();
 
-  // Return the UI for our homepage.
+  const featuredMovie = trending.results[0];
+  const featuredPoster = featuredMovie
+    ? posterUrl(featuredMovie.poster_path)
+    : null;
+  const featuredYear = featuredMovie
+    ? getMovieYear(featuredMovie.release_date)
+    : null;
+
   return (
     <main>
+      {featuredMovie ? (
+        <section className="mb-14 border border-rule bg-paper-raised p-4 sm:p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-gold">
+            Now screening
+          </p>
+          <div className="mt-4 grid items-start gap-8 md:grid-cols-[240px_1fr]">
+            <Link href={`/movies/${featuredMovie.id}`} className="block">
+              <div className="relative aspect-[2/3] overflow-hidden border border-rule bg-stamp">
+                {featuredPoster ? (
+                  <Image
+                    src={featuredPoster}
+                    alt={`${featuredMovie.title} poster`}
+                    fill
+                    priority
+                    sizes="240px"
+                    className="object-cover"
+                  />
+                ) : null}
+              </div>
+            </Link>
 
-      {/* Featured movie / Hero section */}
-      <section>
-        {/* Section heading */}
-        <h1>Featured Movie</h1>
+            <div className="flex min-h-full flex-col">
+              <h1 className="font-display text-4xl leading-tight text-ink sm:text-5xl">
+                {featuredMovie.title}
+              </h1>
+              <p className="mt-3 text-[12px] font-semibold uppercase tracking-[0.18em] text-ink-soft">
+                {[featuredYear, featuredMovie.vote_average.toFixed(1)]
+                  .filter(Boolean)
+                  .join("  ·  ")}
+              </p>
+              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft">
+                {featuredMovie.overview}
+              </p>
+              <div className="mt-8">
+                <Link
+                  href={`/movies/${featuredMovie.id}`}
+                  className="inline-block border border-burgundy bg-burgundy px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stamp hover:bg-burgundy-deep"
+                >
+                  View details
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
-        {/* 
-          Link makes the featured movie clickable.
-          The movie ID is placed into the dynamic URL.
-          Example: /movies/550
-        */}
-        <Link href={`/movies/${featuredMovie.id}`}>
-
-          {/* 
-            Only render the image if TMDB provided a poster path.
-            This is called conditional rendering.
-          */}
-          {featuredMovie.poster_path && (
-            <Image
-              // Build the complete TMDB image URL.
-              src={`https://image.tmdb.org/t/p/w500${featuredMovie.poster_path}`}
-
-              // Alt text describes the image for accessibility.
-              alt={featuredMovie.title}
-
-              // Width of the image.
-              width={300}
-
-              // Height of the image.
-              height={450}
-            />
-          )}
-
-          {/* Display the featured movie's title. */}
-          <h2>{featuredMovie.title}</h2>
-
-          {/* Display the movie's description. */}
-          <p>{featuredMovie.overview}</p>
-        </Link>
-      </section>
-
-      {/* Trending movies section */}
-      <section>
-        {/* Section heading */}
-        <h1>Trending Movies</h1>
-
-        {/* Send the trending movies to our reusable MovieGrid component. */}
+      <section className="mb-12">
+        <SectionHeading kicker="This week" title="Trending movies" />
         <MovieGrid movies={trending.results} />
       </section>
 
-      {/* Popular movies section */}
-      <section>
-        {/* Section heading */}
-        <h1>Popular Movies</h1>
-
-        {/* Display the popular movies using MovieGrid. */}
+      <section className="mb-12">
+        <SectionHeading kicker="Audience" title="Popular movies" />
         <MovieGrid movies={popular.results} />
       </section>
 
-      {/* Top-rated movies section */}
-      <section>
-        {/* Section heading */}
-        <h1>Top Rated Movies</h1>
-
-        {/* Display the top-rated movies using MovieGrid. */}
+      <section className="mb-12">
+        <SectionHeading kicker="Critics" title="Top rated movies" />
         <MovieGrid movies={topRated.results} />
       </section>
 
-      {/* Upcoming movies section */}
-      <section>
-        {/* Section heading */}
-        <h1>Upcoming Movies</h1>
-
-        {/* Display upcoming movies using MovieGrid. */}
+      <section className="mb-12">
+        <SectionHeading kicker="Coming soon" title="Upcoming movies" />
         <MovieGrid movies={upcoming.results} />
       </section>
 
-      {/* Now-playing movies section */}
       <section>
-        {/* Section heading */}
-        <h1>Now Playing</h1>
-
-        {/* Display movies currently playing using MovieGrid. */}
+        <SectionHeading kicker="In theatres" title="Now playing" />
         <MovieGrid movies={nowPlaying.results} />
       </section>
-
     </main>
   );
 }

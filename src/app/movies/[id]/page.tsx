@@ -1,153 +1,155 @@
-
-
-
-// Import the component that displays a list of movies.
+import Image from "next/image";
 import MovieGrid from "@/components/MovieGrid";
-
-// Import the functions that fetch movie information from TMDB.
+import SectionHeading from "@/components/SectionHeading";
 import {
-  getMovieDetails,
   getMovieCredits,
+  getMovieDetails,
   getSimilarMovies,
 } from "@/services/movieApi";
+import { backdropUrl, getMovieYear, posterUrl } from "@/utils/movieMeta";
 
-import Image from "next/image";
-
-// Define the TypeScript type for the page props.
-// "params" is a Promise containing the dynamic route parameters.
 type MovieDetailsPageProps = {
   params: Promise<{
     id: string;
   }>;
 };
 
-// This is an async Server Component.
-// "async" allows us to use "await" for our API requests.
 export default async function MovieDetailsPage({
   params,
 }: MovieDetailsPageProps) {
-  // Wait for the route parameters and extract the movie ID.
   const { id } = await params;
-
-  // Fetch the main information about this movie.
   const movie = await getMovieDetails(id);
-
-  // Fetch the cast and crew information.
   const credits = await getMovieCredits(id);
-
-  // Fetch movies similar to this movie.
   const similar = await getSimilarMovies(id);
 
-  // Search the crew array for the person whose job is "Director".
-  // "find()" returns the first item that matches the condition.
   const director = credits.crew.find(
     (person: { job: string }) => person.job === "Director"
   );
+  const year = getMovieYear(movie.release_date);
+  const poster = posterUrl(movie.poster_path);
+  const backdrop = backdropUrl(movie.backdrop_path);
+  const genres = movie.genres?.map((genre) => genre.name).join(" · ");
 
-  // Return the UI for the movie details page.
   return (
     <main>
+      {backdrop ? (
+        <div className="relative mb-8 h-40 overflow-hidden border border-rule sm:h-56">
+          <Image
+            src={backdrop}
+            alt=""
+            fill
+            priority
+            sizes="1200px"
+            className="object-cover object-top opacity-70"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-paper to-transparent" />
+        </div>
+      ) : null}
 
-      {/* Display the movie backdrop if TMDB provides one. */}
-{movie.backdrop_path && (
-  <Image
-    // Build the TMDB backdrop image URL.
-    src={`https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`}
+      <section className="grid gap-8 md:grid-cols-[240px_1fr]">
+        <div className="relative aspect-[2/3] overflow-hidden border border-rule bg-stamp">
+          {poster ? (
+            <Image
+              src={poster}
+              alt={`${movie.title} poster`}
+              fill
+              sizes="240px"
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-ink-soft">
+              No poster
+            </div>
+          )}
+        </div>
 
-    // Alternative text describing the image.
-    alt={movie.title}
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-gold">
+            Program note
+          </p>
+          <h1 className="mt-2 font-display text-4xl leading-tight text-ink sm:text-5xl">
+            {movie.title}
+          </h1>
+          <p className="mt-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-soft">
+            {[year, genres].filter(Boolean).join("  ·  ")}
+          </p>
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft">
+            {movie.overview}
+          </p>
 
-    // Width of the displayed image.
-    width={1280}
+          <dl className="mt-8 grid gap-3 border-y border-rule py-5 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="uppercase tracking-[0.14em] text-ink-soft">
+                Rating
+              </dt>
+              <dd className="mt-1 font-display text-2xl">
+                {movie.vote_average.toFixed(1)}
+              </dd>
+            </div>
+            <div>
+              <dt className="uppercase tracking-[0.14em] text-ink-soft">
+                Runtime
+              </dt>
+              <dd className="mt-1">{movie.runtime ? `${movie.runtime} min` : "—"}</dd>
+            </div>
+            <div>
+              <dt className="uppercase tracking-[0.14em] text-ink-soft">
+                Release date
+              </dt>
+              <dd className="mt-1">{movie.release_date || "—"}</dd>
+            </div>
+            <div>
+              <dt className="uppercase tracking-[0.14em] text-ink-soft">
+                Popularity
+              </dt>
+              <dd className="mt-1">
+                {movie.popularity != null ? movie.popularity.toFixed(0) : "—"}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="uppercase tracking-[0.14em] text-ink-soft">
+                Director
+              </dt>
+              <dd className="mt-1">{director ? director.name : "Unknown"}</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
 
-    // Height of the displayed image.
-    height={720}
-  />
-)}
+      <section className="mt-12">
+        <SectionHeading kicker="Players" title="Cast" />
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+          {credits.cast.slice(0, 10).map((person) => (
+            <li
+              key={person.id}
+              className="border border-rule bg-paper-raised p-2"
+            >
+              <div className="relative mb-2 aspect-[2/3] overflow-hidden bg-stamp">
+                {person.profile_path ? (
+                  <Image
+                    src={`https://image.tmdb.org/t/p/w185${person.profile_path}`}
+                    alt={person.name}
+                    fill
+                    sizes="160px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-xs text-ink-soft">
+                    No photo
+                  </div>
+                )}
+              </div>
+              <p className="font-display text-base leading-snug">{person.name}</p>
+              <p className="text-sm text-ink-soft">as {person.character}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-{/* Display the movie poster if one exists. */}
-{movie.poster_path && (
-  <Image
-    // Build the TMDB poster image URL.
-    src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-
-    // Alternative text describing the poster.
-    alt={movie.title}
-
-    // Width of the displayed poster.
-    width={300}
-
-    // Height of the displayed poster.
-    height={450}
-  />
-)}
-      {/* Display the movie title. */}
-      <h1>{movie.title}</h1>
-
-      {/* Display the movie description. */}
-      <p>{movie.overview}</p>
-
-      {/* Display the movie rating. */}
-      <p>⭐ {movie.vote_average.toFixed(1)}</p>
-
-      {/* Display the release date. */}
-      <p>Release date: {movie.release_date}</p>
-
-      {/* Display the runtime. */}
-      <p>Runtime: {movie.runtime} minutes</p>
-
-      {/* Display the movie's popularity score. */}
-      <p>Popularity: {movie.popularity}</p>
-
-      {/* Display all genres as a comma-separated list. */}
-      <p>
-        Genres: {movie.genres.map((genre) => genre.name).join(", ")}
-      </p>
-
-      {/* Display the director if one was found. */}
-      <p>
-        Director: {director ? director.name : "Unknown"}
-      </p>
-
-      {/* Display the first 10 cast members. */}
-      <h2>Cast</h2>
-
-      <ul>
-        {credits.cast.slice(0, 10).map((person) => (
-          // <li key={person.id}>
-          //   {person.name} as {person.character}
-          // </li>
-
-          <li key={person.id}>
-  {/* Display the actor's profile image when available. */}
-  {person.profile_path && (
-    <Image
-      // Build the TMDB profile image URL.
-      src={`https://image.tmdb.org/t/p/w185${person.profile_path}`}
-
-      // Describe whose image this is.
-      alt={person.name}
-
-      // Width of the actor's image.
-      width={100}
-
-      // Height of the actor's image.
-      height={150}
-    />
-  )}
-
-  {/* Display the actor's name and character. */}
-  <p>
-    {person.name} as {person.character}
-  </p>
-</li>
-        ))}
-      </ul>
-
-      {/* Display similar movies using our reusable MovieGrid. */}
-      <h2>Similar Movies</h2>
-
-      <MovieGrid movies={similar.results.slice(0, 6)} />
+      <section className="mt-12">
+        <SectionHeading kicker="If you liked this screening" title="Similar movies" />
+        <MovieGrid movies={similar.results.slice(0, 6)} />
+      </section>
     </main>
   );
 }
