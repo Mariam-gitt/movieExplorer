@@ -110,3 +110,32 @@ export type MovieResponse = {
   // Total number of movies available.
   total_results: number;
 };
+
+// Describes one video (trailer, teaser, clip, etc.) attached to a movie.
+export type MovieVideo = {
+  // TMDB's own id for this video entry.
+  id: string;
+
+  // The video's title, e.g. "Official Trailer".
+  name: string;
+
+  // Which platform hosts it — we only care about "YouTube" here, since
+  // that's the only site we know how to embed.
+  site: string;
+
+  // The id YouTube needs to embed/play this video (used to build the
+  // embed URL: https://www.youtube.com/embed/{key}).
+  key: string;
+
+  // What kind of video this is — "Trailer", "Teaser", "Clip", etc.
+  type: string;
+};
+
+// Describes the response we get from TMDB's videos endpoint.
+export type MovieVideosResponse = {
+  // The movie's id these videos belong to.
+  id: number;
+
+  // The list of videos TMDB has for this movie.
+  results: MovieVideo[];
+};

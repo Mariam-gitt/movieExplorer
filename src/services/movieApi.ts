@@ -3,6 +3,7 @@ import type {
   Movie,
   MovieResponse,
   MovieCredits,
+  MovieVideosResponse,
 } from "@/types/movie";
 
 // Store the base URL of the TMDB API in one constant.
@@ -135,6 +136,20 @@ export async function getSimilarMovies(
 
   if (!response.ok) {
     throw new Error("Failed to fetch similar movies");
+  }
+
+  return response.json();
+}
+
+// Fetch trailers/teasers/clips for a specific movie (used to find a YouTube
+// trailer to embed on the movie details page).
+export async function getMovieVideos(id: string): Promise<MovieVideosResponse> {
+  const response = await fetch(
+    `${BASE_URL}/movie/${id}/videos?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch movie videos");
   }
 
   return response.json();

@@ -6,13 +6,17 @@ import LoadingSkeleton from "@/components/LoadingSkeleton";
 import SectionHeading from "@/components/SectionHeading";
 import type { Movie } from "@/types/movie";
 import { getMovieDetails } from "@/services/movieApi";
-import { getFavoriteIds, subscribeToFavorites } from "@/utils/favorites";
+import {
+  EMPTY_FAVORITES,
+  getFavoriteIds,
+  subscribeToFavorites,
+} from "@/utils/favorites";
 
 export default function FavoritesPage() {
   const favoriteIds = useSyncExternalStore(
     subscribeToFavorites,
     getFavoriteIds,
-    () => [] as number[]
+    () => EMPTY_FAVORITES
   );
   const [movies, setMovies] = useState<Movie[] | null>(null);
 

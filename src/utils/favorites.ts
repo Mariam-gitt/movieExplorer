@@ -1,5 +1,6 @@
 const STORAGE_KEY = "favorites";
 const CHANGE_EVENT = "favorites-changed";
+export const EMPTY_FAVORITES = Object.freeze([] as number[]);
 
 let cachedRaw: string | null = null;
 let cachedIds: number[] = [];

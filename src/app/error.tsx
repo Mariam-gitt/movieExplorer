@@ -6,7 +6,7 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <main className="border border-rule bg-paper-raised p-8">
+    <main className="rounded-2xl border border-rule bg-paper-raised p-8">
       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold">
         Interrupted
       </p>
@@ -17,7 +17,7 @@ export default function Error({
       <button
         type="button"
         onClick={() => reset()}
-        className="mt-6 border border-burgundy bg-burgundy px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stamp hover:bg-burgundy-deep"
+        className="mt-6 rounded-full bg-burgundy px-5 py-2.5 text-sm font-bold text-stamp transition hover:bg-burgundy-deep"
       >
         Try again
       </button>

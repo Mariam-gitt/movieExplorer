@@ -1,17 +1,37 @@
+/* Pull in Tailwind's utility classes (things like "flex", "p-4", "rounded-xl") so we can use them everywhere below. */
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------
+ * THEME TOKENS
+ * "Tokens" are just named CSS variables. Instead of hard-coding a colour
+ * in ten different files, every component points at one of these names
+ * (e.g. "var(--paper)"). Change the value once here and the whole app
+ * updates. This block is the LIGHT theme (default / normal daylight look).
+ * ------------------------------------------------------------------- */
 :root {
-  --paper: #f3eee4;
-  --paper-raised: #faf6ee;
-  --ink: #1c1410;
-  --ink-soft: #5c5148;
-  --rule: #c9bba8;
-  --burgundy: #7a2e2a;
-  --burgundy-deep: #5c201d;
-  --gold: #a67c3d;
-  --stamp: #f7efe0;
+  /* Page background — a very soft, slightly cool off-white (streaming-app style). */
+  --paper: #f3f4fb;
+  /* Background for "raised" surfaces: cards, the navbar, the sidebar pill. */
+  --paper-raised: #ffffff;
+  /* Main text colour — near-black instead of pure #000 so it's easier on the eyes. */
+  --ink: #13141b;
+  /* Secondary/muted text colour, used for subtitles, meta info, timestamps. */
+  --ink-soft: #6b7280;
+  /* Border / divider colour — a faint hairline grey. */
+  --rule: #e6e7f0;
+  /* Primary "call to action" colour (buttons like Watch/View details). Near-black pill, like the reference UI's solid black buttons. */
+  --burgundy: #14151c;
+  /* Hover/pressed shade of the primary button — a slightly lighter charcoal. */
+  --burgundy-deep: #2c2e3a;
+  /* Accent colour for badges, star ratings and the "trending" flame — warm amber/orange. */
+  --gold: #f5a524;
+  /* Text colour placed ON TOP of the primary button fill (i.e. white-on-black), and also
+     used as the empty/placeholder background behind a poster image that failed to load. */
+  --stamp: #f2f3f8;
 }
 
+/* Tailwind v4's "@theme inline" block turns each CSS variable above into a
+   real utility class, e.g. --color-gold becomes usable as `text-gold` or `bg-gold`. */
 @theme inline {
   --color-paper: var(--paper);
   --color-paper-raised: var(--paper-raised);
@@ -22,49 +42,171 @@
   --color-burgundy-deep: var(--burgundy-deep);
   --color-gold: var(--gold);
   --color-stamp: var(--stamp);
+  /* Font family variables (set by next/font in layout.tsx) get exposed the same way,
+     so `font-display` and `font-sans` utility classes work in every component. */
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
 }
 
+/* ---------------------------------------------------------------------
+ * DARK THEME
+ * "prefers-color-scheme: dark" is a media query the browser sets
+ * automatically when the user's OS is in dark mode. We simply swap the
+ * token VALUES here — every component that already uses `bg-paper`,
+ * `text-ink`, etc. gets the dark look for free, no extra classes needed.
+ * ------------------------------------------------------------------- */
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #1a1613;
-    --paper-raised: #241f1a;
-    --ink: #f3eee4;
-    --ink-soft: #c4b8a8;
-    --rule: #4a4036;
-    --burgundy: #d4a09a;
-    --burgundy-deep: #e8c4bf;
-    --gold: #d4b483;
-    --stamp: #2a241e;
+    --paper: #0a0b10;
+    --paper-raised: #16171f;
+    --ink: #f3f4f8;
+    --ink-soft: #9aa0b2;
+    --rule: #2a2c38;
+    /* In dark mode the primary button flips to a light fill so it still stands out. */
+    --burgundy: #f2f3f8;
+    --burgundy-deep: #d7d9e2;
+    --gold: #ffb454;
+    /* ...and its label text flips to dark, to stay readable on the now-light button. */
+    --stamp: #14151c;
   }
 }
 
+/* ---------------------------------------------------------------------
+ * MANUAL DARK-MODE TOGGLE
+ * The block above only reacts to the user's OPERATING SYSTEM setting —
+ * there's no in-app switch. These two rules let ThemeToggle.tsx override
+ * that by setting a `data-theme="dark"` or `data-theme="light"` attribute
+ * on the <html> tag. They win over the @media block above for a subtle but
+ * important reason: an attribute selector like `[data-theme="dark"]` counts
+ * as extra CSS specificity, while a plain `:root` inside a @media block
+ * does not — so these rules always take priority once the person has made
+ * an explicit choice, regardless of which order the rules appear in.
+ * ------------------------------------------------------------------- */
+:root[data-theme="dark"] {
+  --paper: #0a0b10;
+  --paper-raised: #16171f;
+  --ink: #f3f4f8;
+  --ink-soft: #9aa0b2;
+  --rule: #2a2c38;
+  --burgundy: #f2f3f8;
+  --burgundy-deep: #d7d9e2;
+  --gold: #ffb454;
+  --stamp: #14151c;
+}
+
+/* Explicit light choice — needed so someone whose OS is set to dark mode
+   can still pick "light" inside the app and have it stick. */
+:root[data-theme="light"] {
+  --paper: #f3f4fb;
+  --paper-raised: #ffffff;
+  --ink: #13141b;
+  --ink-soft: #6b7280;
+  --rule: #e6e7f0;
+  --burgundy: #14151c;
+  --burgundy-deep: #2c2e3a;
+  --gold: #f5a524;
+  --stamp: #f2f3f8;
+}
+
+/* Give the whole document the page background colour before anything else paints,
+   so there's no flash of white while the page is loading. */
 html {
   background: var(--paper);
 }
 
 body {
   background-color: var(--paper);
-  background-image:
-    radial-gradient(ellipse at top, color-mix(in oklab, var(--gold) 8%, transparent), transparent 46%),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 47px,
-      color-mix(in oklab, var(--rule) 28%, transparent) 48px
-    );
+  /* A very soft radial glow in the top corner, like the ambient light in the
+     reference screenshot — purely decorative, doesn't affect layout. */
+  background-image: radial-gradient(
+    ellipse 900px 500px at 15% -10%,
+    color-mix(in oklab, var(--gold) 12%, transparent),
+    transparent 60%
+  );
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Colour used when a user highlights/selects text with their mouse. */
 ::selection {
-  background: color-mix(in oklab, var(--burgundy) 25%, var(--paper));
+  background: color-mix(in oklab, var(--gold) 35%, var(--paper));
 }
 
+/* Accessibility: when someone is tabbing through the page with a keyboard
+   (not clicking with a mouse), draw a visible ring around whatever is
+   focused so they can see where they are. */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--burgundy);
+  outline: 2px solid var(--gold);
   outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Utility class for the frosted-glass "window" look used on the navbar,
+   sidebar, and the movie detail page's metadata panels.
+   - backdrop-filter blurs and saturates whatever sits BEHIND this element
+     (the page content scrolling underneath, or a backdrop image), which is
+     what actually reads as "glass" rather than just a translucent color.
+   - The inset box-shadow draws a thin, brighter line along the very top
+     edge, like light catching the top of a real glass pane, plus a soft
+     drop shadow underneath so the panel still looks like it's sitting
+     slightly above the page rather than painted flat onto it. */
+.glass-panel {
+  background: color-mix(in oklab, var(--paper-raised) 72%, transparent);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklab, white 45%, transparent),
+    0 8px 30px -14px rgba(0, 0, 0, 0.35);
+}
+
+/* In dark mode the "light catching the top edge" needs to be dimmer (a
+   bright white line would look wrong against a dark UI) — this is scoped
+   the same way the other manual dark-mode overrides are: it wins over the
+   plain .glass-panel rule above because the extra attribute selector gives
+   it higher CSS specificity. */
+:root[data-theme="dark"] .glass-panel {
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklab, white 12%, transparent),
+    0 8px 30px -14px rgba(0, 0, 0, 0.6);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .glass-panel {
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklab, white 12%, transparent),
+      0 8px 30px -14px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Golden hover glow for movie cards — DARK MODE ONLY (in light mode, cards
+   keep the plain lift + shadow already defined in MovieCard.tsx). A glow
+   like this would look muddy on a light background, but reads beautifully
+   against a dark one, like the card itself is lit from within.
+   Layered box-shadow: a tight bright ring right at the edge, then a larger
+   soft blur further out — that combination is what sells "glow" rather
+   than just "shadow". Scoped to both the explicit dark-mode override and
+   the OS-preference fallback, same pattern as the rest of dark mode. */
+:root[data-theme="dark"] .movie-card:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--gold) 70%, transparent),
+    0 0 28px 4px color-mix(in oklab, var(--gold) 45%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .movie-card:hover {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--gold) 70%, transparent),
+      0 0 28px 4px color-mix(in oklab, var(--gold) 45%, transparent);
+  }
+}
+
+/* Hide an element visually but keep it available to screen readers —
+   used for labels like "Search movies by title" that sighted users don't need to see. */
+.sr-only-focusable:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
 }
