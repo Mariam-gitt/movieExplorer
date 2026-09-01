@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Movie } from "@/types/movie";
 import { getMovieDetails } from "@/services/movieApi";
-import { getFavoriteIds, subscribeToFavorites } from "@/utils/favorites";
+import {
+  EMPTY_FAVORITES,
+  getFavoriteIds,
+  subscribeToFavorites,
+} from "@/utils/favorites";
 import { getMovieYear, posterUrl } from "@/utils/movieMeta";
 
 // This mirrors the "Continue Watching" list from the reference design, but
@@ -18,7 +22,7 @@ export default function FavoritesPreview() {
   const favoriteIds = useSyncExternalStore(
     subscribeToFavorites,
     getFavoriteIds,
-    () => [] as number[] // what to show during server rendering (no favorites yet)
+    () => EMPTY_FAVORITES // what to show during server rendering (no favorites yet)
   );
 
   // "movies" starts as null (meaning "haven't loaded yet"); once the fetch

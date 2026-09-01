@@ -1,9 +1,10 @@
 "use client"; // Needs browser storage (localStorage) and click handling, so it
 // must be a client component.
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useSyncExternalStore, type MouseEvent } from "react";
 import type { Movie } from "@/types/movie";
 import {
+  EMPTY_FAVORITES,
   getFavoriteIds,
   setFavoriteIds,
   subscribeToFavorites,
@@ -19,20 +20,21 @@ export default function FavoriteButton({ movie }: FavoriteButtonProps) {
   // in sync with it — it automatically re-renders this component whenever
   // the favorites list changes anywhere in the app (even in another tab).
   //
-  // getServerSnapshot (3rd argument) is what to show during server rendering,
-  // where localStorage doesn't exist — we just say "no favorites yet" there,
-  // then it corrects itself once the page loads in the browser.
-  const getServerSnapshot = useCallback(() => [] as number[], []);
-
+  // The server snapshot must stay stable across renders. Creating a fresh
+  // array each time would make React think the external value changed and
+  // trigger the infinite loop warning.
   const favorites = useSyncExternalStore(
     subscribeToFavorites,
     getFavoriteIds,
-    getServerSnapshot
+    () => EMPTY_FAVORITES
   );
   // Is THIS movie's id currently in the favorites list?
   const isFavorite = favorites.includes(movie.id);
 
-  function handleFavorite() {
+  function handleFavorite(event?: MouseEvent<HTMLButtonElement>) {
+    event?.preventDefault();
+    event?.stopPropagation();
+
     if (isFavorite) {
       // Remove this movie's id, keep everything else.
       setFavoriteIds(favorites.filter((id) => id !== movie.id));
@@ -46,10 +48,8 @@ export default function FavoriteButton({ movie }: FavoriteButtonProps) {
     <button
       type="button"
       onClick={handleFavorite}
-      // "e.preventDefault/stopPropagation" isn't needed here because this
-      // button sits inside a <Link>, but stopping propagation keeps a click
-      // on the heart from ALSO triggering the poster link underneath it.
-      onClickCapture={(event) => event.stopPropagation()}
+      // Prevent the card link from also firing when the heart is clicked while
+      // still letting this button's own click handler run.
       // aria-pressed tells screen readers this is a toggle button and what
       // state it's currently in (like a checkbox, but for a button).
       aria-pressed={isFavorite}
