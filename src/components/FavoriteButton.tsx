@@ -44,20 +44,13 @@ export default function FavoriteButton({ movie }: FavoriteButtonProps) {
     }
   }
 
-  function handleFavoriteCapture(event: MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
   return (
     <button
       type="button"
       onClick={handleFavorite}
-      onClickCapture={handleFavoriteCapture}
-      // Prevent the card link from also firing when the heart is clicked while
-      // still letting this button's own click handler run. The capture-phase
-      // handler runs before the parent <Link> can navigate, which is the
-      // critical fix when the heart lives inside a clickable card.
+      // The card itself is no longer a link, so the button only needs its own
+      // click handler. Preventing default here keeps the toggle behavior clean
+      // without blocking the click event from firing in the first place.
       // aria-pressed tells screen readers this is a toggle button and what
       // state it's currently in (like a checkbox, but for a button).
       aria-pressed={isFavorite}
