@@ -141,6 +141,46 @@ export async function getSimilarMovies(
   return response.json();
 }
 
+// Fetch movies filtered by genre and/or sorted a particular way, using
+// TMDB's "discover" endpoint — this is a DIFFERENT endpoint from the plain
+// category ones above (like getPopularMovies). "Discover" is what TMDB
+// specifically built for combining filters together (genre, sort order,
+// rating, year, etc.), instead of only returning one fixed list.
+export async function discoverMovies(options: {
+  // TMDB's numeric id for a genre (e.g. 28 = Action). Optional — if
+  // omitted, movies from every genre are included.
+  genreId?: number;
+  // Which field TMDB should sort results by, in TMDB's own query format
+  // (e.g. "popularity.desc", "vote_average.desc"). Defaults to popularity.
+  sortBy?: string;
+}): Promise<MovieResponse> {
+  // URLSearchParams builds a query string ("key=value&key2=value2") for us,
+  // so we don't have to manually glue strings together with "&" and "=".
+  const params = new URLSearchParams({
+    api_key: process.env.NEXT_PUBLIC_TMDB_API_KEY ?? "",
+    sort_by: options.sortBy ?? "popularity.desc",
+    // TMDB ignores runtime-less/rating-less entries by default when sorting
+    // by rating, but this threshold keeps obscure zero-vote titles (which
+    // can appear to have a fake "10/10" rating from a single vote) out of
+    // the "Top rated" sort.
+    "vote_count.gte": "50",
+  });
+
+  // Only add the genre filter to the query string if one was actually
+  // passed in — an empty/undefined genreId means "show every genre".
+  if (options.genreId != null) {
+    params.set("with_genres", String(options.genreId));
+  }
+
+  const response = await fetch(`${BASE_URL}/discover/movie?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to discover movies");
+  }
+
+  return response.json();
+}
+
 // Fetch trailers/teasers/clips for a specific movie (used to find a YouTube
 // trailer to embed on the movie details page).
 export async function getMovieVideos(id: string): Promise<MovieVideosResponse> {

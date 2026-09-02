@@ -2,6 +2,7 @@ import Image from "next/image";
 import MovieGrid from "@/components/MovieGrid";
 import SectionHeading from "@/components/SectionHeading";
 import TrailerButton from "@/components/TrailerButton";
+import ShareButton from "@/components/ShareButton";
 import {
   getMovieCredits,
   getMovieDetails,
@@ -141,13 +142,14 @@ export default async function MovieDetailsPage({
         {genreList.map((genre) => (
           <Pill key={genre.id}>{genre.name}</Pill>
         ))}
-        {/* Only rendered when TMDB actually has a YouTube trailer/teaser —
-            no dead "Watch Trailer" button pointing at nothing. */}
-        {trailer ? (
-          <div className="ml-auto">
+        {/* Share is always available; the trailer button only renders when
+            TMDB actually has a YouTube trailer/teaser for this movie. */}
+        <div className="ml-auto flex items-center gap-2">
+          <ShareButton title={movie.title} />
+          {trailer ? (
             <TrailerButton videoKey={trailer.key} movieTitle={movie.title} />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
 
       <section className="mt-8 grid gap-8 md:grid-cols-[1fr_260px]">

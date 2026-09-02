@@ -14,6 +14,10 @@ const CATEGORY_TABS = [
   { href: "/#top-rated", label: "Top Rated" },
   { href: "/#upcoming", label: "Upcoming" },
   { href: "/#now-playing", label: "Now Playing" },
+  // Unlike the tabs above (anchor links "#trending" that jump around within
+  // the homepage), this one is a real route to a different page entirely:
+  // src/app/genres/page.tsx.
+  { href: "/genres", label: "Genres" },
 ];
 
 export default function Navbar() {

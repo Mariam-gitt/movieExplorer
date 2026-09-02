@@ -1,6 +1,9 @@
 import type { Movie } from "@/types/movie";
 
-const GENRE_NAMES: Record<number, string> = {
+// "export" here (added for the genre-browsing feature) means other files
+// can now import GENRE_NAMES directly too, not just the helper functions
+// below that already used it internally.
+export const GENRE_NAMES: Record<number, string> = {
   28: "Action",
   12: "Adventure",
   16: "Animation",
@@ -21,6 +24,17 @@ const GENRE_NAMES: Record<number, string> = {
   10752: "War",
   37: "Western",
 };
+
+// Turns the GENRE_NAMES object above into an array of {id, name} pairs,
+// sorted alphabetically by name. Components that need to LIST every genre
+// (like genre-filter chips) want an array to .map() over — an object with
+// numeric keys isn't convenient for that, even though it's great for the
+// "look up one genre's name by id" job GENRE_NAMES was originally for.
+export const GENRE_LIST: { id: number; name: string }[] = Object.entries(
+  GENRE_NAMES
+)
+  .map(([id, name]) => ({ id: Number(id), name }))
+  .sort((a, b) => a.name.localeCompare(b.name));
 
 export function getMovieYear(releaseDate?: string) {
   if (!releaseDate) return null;
