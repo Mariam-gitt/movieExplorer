@@ -21,204 +21,168 @@ A modern, full-featured web application for exploring movies, discovering new fa
 
 ## 🏗️ Architecture Overview
 
-### System Architecture
+### System Components
+
+The application follows a **Client-Server** architecture with **Server-Side Rendering (SSR)**:
+
+- **Browser (Frontend)** - React components rendering UI
+- **Next.js Server** - Handles Server Components, API routing, and data fetching
+- **TMDB API** - External movie data source
+- **Browser Storage** - localStorage for favorites persistence
+- **URL State** - Query parameters for filtering and sorting
+
+### Component Hierarchy
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Movie Explorer App                       │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │
-        ┌──────────────┼──────────────┐
-        │              │              │
-   ┌────▼────┐   ┌────▼────┐   ┌────▼────┐
-   │ Browser │   │ Next.js  │   │  TMDB   │
-   │  (UI)   │   │  Server  │   │   API   │
-   └────┬────┘   └────┬────┘   └────┬────┘
-        │              │             │
-        │  Client-Side │  Server-Side│
-        │   Rendering  │  Rendering  │
-        │              │             │
-        └──────────────┼─────────────┘
-                       │
-            ┌──────────┴──────────┐
-            │                     │
-      ┌─────▼────┐         ┌─────▼──────┐
-      │localStorage│        │Query String│
-      │ (Favorites)│        │  (Sorting) │
-      └───────────┘         └────────────┘
+App Root (layout.tsx)
+│
+├── Home Page (/)
+│   └── MovieGrid → [MovieCard + FavoriteButton]
+│
+├── Search Page (/search)
+│   ├── SearchInput
+│   └── MovieGrid → [MovieCard + FavoriteButton]
+│
+├── Genres Page (/genres)
+│   ├── GenreChips (filter by genre)
+│   ├── SortSelect (dropdown sort options)
+│   ├── loading.tsx (skeleton fallback)
+│   └── MovieGrid → [MovieCard + FavoriteButton]
+│
+└── Movie Details Page (/movies/[id])
+    ├── MovieHeader (title, rating, overview)
+    ├── ShareButton
+    ├── FavoriteButton
+    ├── loading.tsx (skeleton fallback)
+    └── Additional details
 ```
 
-### Component Architecture
+### Directory Structure
 
 ```
 src/
-├── app/
-│   ├── page.tsx (Home - Server Component)
-│   │   └── Renders trending movies
+├── app/                          # Next.js 16 App Router (file-based routes)
+│   ├── page.tsx                  # Home page (Server Component)
+│   ├── layout.tsx                # Root layout wrapper
 │   │
 │   ├── search/
-│   │   └── page.tsx (Search - Server Component)
-│   │       └── Searches movies by title
+│   │   └── page.tsx              # Search page (Server Component)
 │   │
 │   ├── genres/
-│   │   ├── page.tsx (Genres - Server Component)
-│   │   │   └── Filters by genre & sorting
-│   │   └── loading.tsx (Skeleton fallback)
+│   │   ├── page.tsx              # Genre browse page (Server Component)
+│   │   └── loading.tsx           # Skeleton loader (auto-wrapped by Next.js)
 │   │
-│   ├── movies/
-│   │   └── [id]/
-│   │       ├── page.tsx (Movie Details - Server Component)
-│   │       └── loading.tsx (Skeleton fallback)
-│   │
-│   └── layout.tsx (Root layout)
+│   └── movies/
+│       └── [id]/
+│           ├── page.tsx          # Movie details page (Server Component)
+│           └── loading.tsx       # Skeleton loader
 │
-├── components/
-│   ├── MovieCard.tsx (Client)
-│   │   └── Displays individual movie
-│   │
-│   ├── MovieGrid.tsx (Client)
-│   │   └── Grid of movie cards
-│   │
-│   ├── FavoriteButton.tsx (Client)
-│   │   └── Toggle favorite + persist to localStorage
-│   │
-│   ├── ShareButton.tsx (Client)
-│   │   └── Native share + clipboard fallback
-│   │
-│   ├── GenreChips.tsx (Server)
-│   │   └── Genre filter links
-│   │
-│   └── SortSelect.tsx (Client)
-│       └── Dropdown for sort options
+├── components/                   # Reusable React components
+│   ├── MovieCard.tsx             # Movie card display (Client Component)
+│   ├── MovieGrid.tsx             # Grid layout for movies (Client Component)
+│   ├── FavoriteButton.tsx        # Favorite toggle button (Client Component)
+│   ├── ShareButton.tsx           # Share functionality (Client Component)
+│   ├── GenreChips.tsx            # Genre filter chips (Server Component)
+│   ├── SortSelect.tsx            # Sort dropdown (Client Component)
+│   └── ...other components
 │
 ├── services/
-│   └── movieApi.ts
-│       └── TMDB API calls
+│   └── movieApi.ts               # TMDB API integration & data fetching
 │
 ├── utils/
-│   └── favorites.ts
-│       └── localStorage management
+│   └── favorites.ts              # localStorage helpers & favorites logic
 │
-└── __tests__/
-    ├── favorites.test.ts
-    ├── FavoriteButton.test.tsx
-    └── ShareButton.test.tsx
+└── __tests__/                    # Unit tests
+    ├── favorites.test.ts         # Pure logic tests
+    ├── FavoriteButton.test.tsx   # Component interaction tests
+    └── ShareButton.test.tsx      # Browser API tests
 ```
 
 ---
 
-## 📊 Data Flow
+## 📊 Data Flow & Key Features
 
-### Feature: Favorite Button (Toggle + Persistence)
+### Feature 1: Favorites (Toggle + Persistence)
 
-```
-User Clicks Heart
-    ↓
-FavoriteButton.tsx → handleFavorite()
-    ↓
-event.stopPropagation()
-    ↓
-setFavoriteIds() → favorites.ts
-    ↓
-Write to localStorage + Dispatch "favorites-changed" event
-    ↓
-subscribeToFavorites listener (useSyncExternalStore) →
-    triggers re-render across ALL FavoriteButton instances
-    ↓
-UI Updates Instantly (No prop drilling needed!)
-```
+**How it works:**
 
-**Why this works:**
-- `useSyncExternalStore` provides **external state management** without Redux
-- Multiple components stay in sync via browser events
-- localStorage persists across page reloads
-- No parent-to-child prop drilling required
+1. User clicks the heart icon on a movie card
+2. `FavoriteButton.tsx` prevents event bubbling (stops parent `<Link>` from triggering)
+3. `setFavoriteIds()` writes the updated favorites array to `localStorage`
+4. A custom `"favorites-changed"` browser event is dispatched
+5. All `FavoriteButton` instances listening via `useSyncExternalStore()` automatically re-render
+6. The heart icon updates instantly across the entire app (no prop drilling needed)
+7. Favorites persist across page reloads and browser sessions
+
+**Why this approach:**
+
+- Uses `useSyncExternalStore` hook for external state management (no Redux needed)
+- localStorage provides cross-session persistence
+- Browser events synchronize multiple components without manual re-render logic
+- No loading spinners—updates are instant
 
 ---
 
-### Feature: Genre Filtering + Sorting (URL-based)
+### Feature 2: Genre Filtering + Sorting (URL-Based)
 
-```
-User Clicks Genre Chip or Changes Sort Dropdown
-    ↓
-GenreChips.tsx: Simple <Link href="/genres?genre=28">
-  OR
-SortSelect.tsx: useSearchParams() + router.push()
-    ↓
-URL changes to /genres?genre=28&sort=popularity
-    ↓
-Next.js re-runs genres/page.tsx (Server Component)
-    ↓
-searchParams automatically updated (no hook needed!)
-    ↓
-discoverMovies(genreId, sortBy) → TMDB API fetch
-    ↓
-MovieGrid renders with new results
-    ↓
-loading.tsx shows skeleton while fetching
-```
+**How it works:**
 
-**Why this works:**
-- URL is the single source of truth
-- Server Components get `searchParams` automatically
-- No client-side state management needed
-- Back button works perfectly (no custom navigation logic)
+1. User clicks a genre chip (e.g., "Action") or changes the sort dropdown
+2. For genre chips: they're simple `<Link>` elements, so clicking triggers normal browser navigation to `/genres?genre=28`
+3. For sort dropdown: Client Component uses `useSearchParams()` to read the URL, then `router.push()` to update it to `/genres?genre=28&sort=popularity`
+4. Next.js re-runs the `genres/page.tsx` Server Component with the new query parameters
+5. `searchParams` are automatically available (no hook needed—Server Components receive them directly)
+6. `discoverMovies()` fetches updated data from TMDB based on the new filters
+7. MovieGrid renders with the new results
+8. While loading, the skeleton from `loading.tsx` displays smoothly
+
+**Why this approach:**
+
+- URL is the single source of truth (bookmarks and the back button work perfectly)
+- Server Components handle data fetching—no hydration mismatches
+- No complex state management—just read the URL
+- Users see immediate visual feedback with skeleton loading
 
 ---
 
-### Feature: Skeleton Loading
+### Feature 3: Skeleton Loading
 
-```
-User navigates to /genres?...
-    ↓
-Next.js finds:
-  ├── genres/page.tsx (slow - awaiting TMDB)
-  └── genres/loading.tsx (fast - instant render)
-    ↓
-Automatic wrapping (no manual <Suspense>):
-  <Suspense fallback={<Loading />}>
-    <Page />
-  </Suspense>
-    ↓
-Show Loading → User sees skeleton immediately
-    ↓
-page.tsx awaits discoverMovies() → resolves
-    ↓
-Swap Loading out → Show real MovieGrid
-```
+**How it works:**
 
-**Why this works:**
-- Next.js auto-wraps via filename convention (`loading.tsx`)
-- No manual Suspense boundaries needed
-- Zero layout shift (skeleton mimics real content shape)
-- Users never see a blank page
+1. User navigates to a route like `/genres` or `/movies/123`
+2. Next.js automatically looks for a `loading.tsx` file in that folder
+3. While the Server Component (`page.tsx`) is fetching data (awaiting TMDB API), React shows the skeleton (`loading.tsx`)
+4. The skeleton mimics the shape of real content (poster-sized boxes, title bars)
+5. Once the data fetch completes, React swaps out the skeleton and shows the real page
+6. No blank white screen—users always see something
+
+**Why this approach:**
+
+- Automatic—no manual `<Suspense>` boundaries needed, just naming convention
+- Zero layout shift (skeleton layout matches final content layout)
+- Better perceived performance than spinners or blank pages
 
 ---
 
-### Feature: Share Movie
+### Feature 4: Share Movie Link
 
-```
-User clicks Share Button
-    ↓
-ShareButton.tsx → handleShare()
-    ↓
-Check: "share" in navigator?
-    ├─ YES → navigator.share({title, url})
-    │   ↓
-    │   Device native share sheet opens
-    │   (User selects WhatsApp, Email, etc.)
-    │
-    └─ NO → navigator.clipboard.writeText(url)
-        ↓
-        URL copied to clipboard
-        ↓
-        Button shows "Copied!" for 2 seconds
-```
+**How it works:**
 
-**Why this works:**
-- Progressive enhancement (graceful fallback)
-- Works on mobile (native share) and desktop (clipboard)
-- URL always current (`window.location.href` read at click time)
+1. User clicks the "Share" button on a movie detail page
+2. `ShareButton.tsx` checks if the browser supports the native Web Share API: `"share" in navigator`
+3. **On mobile (or browsers with share support):** Opens the device's native share sheet
+   - User can select WhatsApp, Email, Twitter, etc.
+   - URL is always current (read at click time: `window.location.href`)
+4. **On desktop (or if native share fails):** Falls back to `navigator.clipboard.writeText(url)`
+   - Copies URL to clipboard
+   - Button text changes to "Copied!" for 2 seconds
+5. Both paths provide a working solution—progressive enhancement
+
+**Why this approach:**
+
+- Works everywhere (mobile has native share, desktop has clipboard)
+- Graceful fallback if one method fails
+- No third-party share APIs needed
 
 ---
 
@@ -226,24 +190,34 @@ Check: "share" in navigator?
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **Framework** | Next.js 16 | Server + Client rendering, file-based routing |
-| **Language** | TypeScript 5 | Type safety, better DX |
-| **UI Library** | React 19 | Component-based UI |
-| **Styling** | Tailwind CSS 4 | Utility-first CSS framework |
-| **Testing** | Vitest + React Testing Library | Unit tests, component tests |
-| **Linting** | ESLint 9 | Code quality |
-| **External API** | TMDB API | Movie data source |
-| **Storage** | Browser localStorage | Favorites persistence |
-| **Deployment** | Vercel | Fast, zero-config hosting |
+| **Framework** | Next.js 16 | SSR, file-based routing, Server & Client Components |
+| **Language** | TypeScript 5 | Type safety, better developer experience |
+| **UI Library** | React 19 | Component-based UI, hooks |
+| **Styling** | Tailwind CSS 4 | Utility-first CSS, responsive design |
+| **Testing** | Vitest + React Testing Library | Fast unit tests, behavior-focused testing |
+| **Linting** | ESLint 9 | Code quality & consistency |
+| **External API** | TMDB API | Movie database & metadata |
+| **Storage** | Browser localStorage | Client-side favorites persistence |
+| **Deployment** | Vercel | Optimized Next.js hosting |
 
---
+---
+
+## 📊 Project Composition
+
+```
+TypeScript: 91.7% ████████████████████
+CSS:         7.8% █
+JavaScript:  0.5% 
+```
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - **Node.js** 18+ or higher
-- **npm** or **yarn** or **pnpm**
+- **npm**, **yarn**, or **pnpm**
 
 ### Installation
 
@@ -279,94 +253,79 @@ npm start
 
 ## 🧪 Testing
 
-The project includes comprehensive unit tests covering:
-- **Pure logic** - favorites utility functions
-- **Component interactions** - favorite button clicks
-- **Browser APIs** - share/clipboard functionality
-- **Async operations** - loading states and data fetching
+The project includes comprehensive unit tests covering different testing scenarios:
+
+### Test Coverage
+
+- **Pure Logic** (`favorites.test.ts`) - Tests utility functions without rendering
+- **Component Interaction** (`FavoriteButton.test.tsx`) - Tests user interactions and state updates
+- **Browser APIs** (`ShareButton.test.tsx`) - Tests native browser APIs with mocks
+- **Async Operations** - Tests async behavior and loading states
 
 ### Run Tests
 
 ```bash
-# Run tests once (for CI/CD)
+# Run tests once (for CI/CD pipelines)
 npm test
 
-# Watch mode (for development)
+# Watch mode (for active development)
 npx vitest
 ```
 
-### Test Structure
+### Test Philosophy
 
-```
-src/__tests__/
-├── favorites.test.ts           # Pure logic tests
-├── FavoriteButton.test.tsx      # Component + interaction tests
-└── ShareButton.test.tsx         # Browser API + async tests
-```
-
-**Testing Philosophy:**
-- Test **user behavior**, not implementation details
-- Use React Testing Library's accessible queries (`getByRole`)
-- Mock browser APIs only when jsdom doesn't implement them
-
----
-
-## 📁 Project Structure Explained
-
-```
-movieExplorer/
-├── src/
-│   ├── app/                    # Next.js app directory (routes)
-│   │   ├── page.tsx            # Home page
-│   │   ├── layout.tsx          # Root layout
-│   │   ├── search/             # Search route
-│   │   ├── genres/             # Genre filtering route
-│   │   └── movies/[id]/        # Movie details route
-│   │
-│   ├── components/             # Reusable React components
-│   │   ├── MovieCard.tsx       # Movie card component
-│   │   ├── FavoriteButton.tsx  # Favorite toggle component
-│   │   ├── ShareButton.tsx     # Share component
-│   │   └── ...
-│   │
-│   ├── services/               # API & external services
-│   │   └── movieApi.ts         # TMDB API wrapper
-│   │
-│   ├── utils/                  # Utility functions
-│   │   └── favorites.ts        # localStorage helpers
-│   │
-│   └── __tests__/              # Unit tests
-│       ├── *.test.ts(x)        # Test files
-│       └── ...
-│
-├── public/                     # Static assets (images, fonts)
-├── package.json                # Dependencies & scripts
-├── tsconfig.json               # TypeScript config
-├── next.config.ts              # Next.js config
-├── tailwind.config.js          # Tailwind CSS config
-└── vitest.config.mts           # Test runner config
-```
+- Test **user behavior**, not internal implementation details
+- Use accessible queries (`getByRole`, `getByText`) instead of targeting DOM internals
+- Mock only what jsdom doesn't implement (browser APIs)
+- Keep tests maintainable—refactoring internals shouldn't break passing tests
 
 ---
 
 ## 🔄 State Management Strategy
 
-### Why No Redux?
-
-This project uses **URL + localStorage + Browser Events** instead of a global state manager:
+Unlike traditional Redux applications, this project uses a **lightweight, distributed state approach**:
 
 | State Type | Storage | Method |
 |-----------|---------|--------|
-| **Sorting/Filtering** | URL Query String | Server-side (no hydration mismatch) |
-| **Favorites** | localStorage | `useSyncExternalStore` + custom events |
-| **Component UI** | React State | Local `useState` (loading, copied, etc.) |
+| **Filtering & Sorting** | URL Query String | Server-side processing (no hydration issues) |
+| **User Favorites** | Browser localStorage | `useSyncExternalStore` + custom events |
+| **Component UI** | React `useState` | Local component state (loading, copied status, etc.) |
 
-**Benefits:**
-✅ No Redux boilerplate  
-✅ URL favorites work out-of-the-box  
-✅ Back button works perfectly  
-✅ Bookmarking filtered views works  
-✅ Favorites sync across tabs automatically  
+**Why this works better than Redux:**
+
+✅ **Simpler codebase** - No action creators, reducers, or dispatch boilerplate  
+✅ **URL state is bookmarkable** - Users can share filtered views  
+✅ **Back button works naturally** - No custom navigation logic needed  
+✅ **Favorites sync across tabs** - localStorage events fire globally  
+✅ **Faster initial load** - No store hydration overhead  
+
+---
+
+## 📁 File-by-File Breakdown
+
+### Server Components (Pages)
+
+- **`app/page.tsx`** - Fetches trending movies and displays them
+- **`app/search/page.tsx`** - Searches movies by query string
+- **`app/genres/page.tsx`** - Filters by genre and sorting, uses `searchParams`
+- **`app/movies/[id]/page.tsx`** - Displays movie details and related info
+
+### Client Components (Interactive Elements)
+
+- **`FavoriteButton.tsx`** - Toggles favorite status, syncs via `useSyncExternalStore`
+- **`ShareButton.tsx`** - Handles native share + clipboard fallback
+- **`SortSelect.tsx`** - Dropdown to change sort order via URL
+- **`MovieGrid.tsx`** - Grid layout container for movie cards
+
+### Server Components (Non-Interactive)
+
+- **`GenreChips.tsx`** - Genre filter links (pure links, no JS needed)
+- **`MovieCard.tsx`** - Movie display card (can be Server or Client)
+
+### Services & Utilities
+
+- **`services/movieApi.ts`** - TMDB API wrapper with fetch logic
+- **`utils/favorites.ts`** - localStorage helpers (`getFavoriteIds`, `setFavoriteIds`, etc.)
 
 ---
 
@@ -374,7 +333,7 @@ This project uses **URL + localStorage + Browser Events** instead of a global st
 
 ### Deploy to Vercel (Recommended)
 
-The app is already configured for Vercel and deployed at [movie-explorer-chi-eight.vercel.app](https://movie-explorer-chi-eight.vercel.app).
+The app is currently deployed at [movie-explorer-chi-eight.vercel.app](https://movie-explorer-chi-eight.vercel.app).
 
 To deploy your own copy:
 
@@ -382,61 +341,79 @@ To deploy your own copy:
 # Install Vercel CLI
 npm install -g vercel
 
-# Deploy
+# Deploy (prompts for configuration)
 vercel
 ```
 
-**Environment Variables:**
-- Add your `TMDB_API_KEY` to Vercel's project settings
-- (Already configured in the current deployment)
+### Environment Variables
 
-### Deploy to Other Platforms
+- `TMDB_API_KEY` - Your TMDB API key for movie data
+- Set in Vercel project settings under "Environment Variables"
 
-The project is a standard Next.js app and can run on:
-- **Netlify** - Static export (requires custom API routing)
+### Other Deployment Options
+
+- **Netlify** - Standard Node.js deployment
 - **AWS** - Via Amplify or Lambda
-- **Docker** - Standard Node.js container
-- **Self-hosted** - Any Node.js server
+- **Docker** - Containerized Node.js app
+- **Self-Hosted** - Any Node.js server
 
 ---
 
-## 🐛 Common Issues & Solutions
+## 🐛 Troubleshooting
 
-### Favorites Not Persisting?
-- Check browser localStorage is enabled
-- Verify `utils/favorites.ts` is reading/writing correctly
-- Check browser DevTools → Application → localStorage
+### Issue: Favorites not saving
+**Solution:**
+- Verify localStorage is enabled in your browser
+- Check DevTools → Application → localStorage
+- Confirm `utils/favorites.ts` is reading/writing correctly
 
-### Movies Not Loading?
-- Verify TMDB API key is set
-- Check network tab for API errors
-- Ensure browser allows CORS requests to `api.themoviedb.org`
+### Issue: Movies not loading
+**Solution:**
+- Verify TMDB API key is configured
+- Check DevTools → Network tab for API errors
+- Ensure CORS is allowed for `api.themoviedb.org`
 
-### Build Fails?
-- Clear `.next/` folder: `rm -rf .next`
-- Clear node_modules: `rm -rf node_modules && npm install`
-- Check TypeScript errors: `npx tsc --noEmit`
+### Issue: Build fails with TypeScript errors
+**Solution:**
+```bash
+# Clear cache and reinstall
+rm -rf .next node_modules
+npm install
+
+# Check for type errors
+npx tsc --noEmit
+```
+
+### Issue: Styles not applying
+**Solution:**
+- Verify Tailwind CSS is configured in `tailwind.config.js`
+- Check that CSS file imports are in `layout.tsx`
+- Rebuild with `npm run build`
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to:
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Follow these steps:
+
+1. **Fork** the repository
+2. **Create a feature branch** - `git checkout -b feature/amazing-feature`
+3. **Make your changes** - Write code and tests
+4. **Run tests** - `npm test` to ensure everything passes
+5. **Commit** - `git commit -m 'Add amazing feature'`
+6. **Push** - `git push origin feature/amazing-feature`
+7. **Open a Pull Request** - Describe your changes
 
 ---
 
 ## 📚 Learning Resources
 
-- **Next.js 16 Docs:** [nextjs.org](https://nextjs.org)
-- **React 19:** [react.dev](https://react.dev)
-- **Tailwind CSS:** [tailwindcss.com](https://tailwindcss.com)
-- **TMDB API:** [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
-- **React Testing Library:** [testing-library.com](https://testing-library.com)
+- **Next.js Documentation** - [nextjs.org](https://nextjs.org)
+- **React 19** - [react.dev](https://react.dev)
+- **Tailwind CSS** - [tailwindcss.com](https://tailwindcss.com)
+- **TMDB API** - [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
+- **React Testing Library** - [testing-library.com](https://testing-library.com)
+- **Vitest** - [vitest.dev](https://vitest.dev)
 
 ---
 
@@ -455,9 +432,15 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 🎯 Roadmap
 
 Future enhancements planned:
-- [ ] User authentication & watchlists
-- [ ] Movie ratings & reviews
-- [ ] Advanced filtering (year, rating, runtime)
 
+- [ ] User authentication & personal watchlists
+- [ ] Movie ratings & user reviews
+- [ ] Advanced filtering (release year, IMDb rating, runtime)
+- [ ] Dark mode theme toggle
+- [ ] Internationalization (i18n) for multiple languages
+- [ ] Recommendation engine based on favorites
+- [ ] Mobile app (React Native)
 
+---
 
+**Happy exploring! 🍿**
