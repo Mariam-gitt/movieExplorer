@@ -51,12 +51,20 @@ export async function getTopRatedMovies(): Promise<MovieResponse> {
 }
 
 // Search TMDB for movies matching the user's search query.
+// "page" (new, for INFINITE SCROLLING) works exactly like discoverMovies'
+// page option above: it defaults to 1, so every existing call site that
+// only passes a query string keeps behaving exactly as before.
 export async function searchMovies(
-  query: string
+  query: string,
+  page = 1
 ): Promise<MovieResponse> {
-  const response = await fetch(
-    `${BASE_URL}/search/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&query=${encodeURIComponent(query)}`
-  );
+  const params = new URLSearchParams({
+    api_key: process.env.NEXT_PUBLIC_TMDB_API_KEY ?? "",
+    query,
+    page: String(page),
+  });
+
+  const response = await fetch(`${BASE_URL}/search/movie?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error("Failed to search movies");
@@ -153,6 +161,20 @@ export async function discoverMovies(options: {
   // Which field TMDB should sort results by, in TMDB's own query format
   // (e.g. "popularity.desc", "vote_average.desc"). Defaults to popularity.
   sortBy?: string;
+  // ADVANCED FILTERING (new): only include movies released ON OR AFTER
+  // this year. Left undefined = no lower bound.
+  yearFrom?: number;
+  // ADVANCED FILTERING (new): only include movies released ON OR BEFORE
+  // this year. Left undefined = no upper bound.
+  yearTo?: number;
+  // ADVANCED FILTERING (new): only include movies whose average rating
+  // (out of 10) is at least this number. Left undefined = no minimum.
+  minRating?: number;
+  // INFINITE SCROLLING (new): which page of results to fetch. TMDB returns
+  // 20 movies per page — "page 1" is the first 20, "page 2" is the next 20,
+  // and so on. Defaults to 1 (the first page) so every existing caller that
+  // doesn't know about pagination still works exactly like before.
+  page?: number;
 }): Promise<MovieResponse> {
   // URLSearchParams builds a query string ("key=value&key2=value2") for us,
   // so we don't have to manually glue strings together with "&" and "=".
@@ -164,12 +186,30 @@ export async function discoverMovies(options: {
     // can appear to have a fake "10/10" rating from a single vote) out of
     // the "Top rated" sort.
     "vote_count.gte": "50",
+    page: String(options.page ?? 1),
   });
 
   // Only add the genre filter to the query string if one was actually
   // passed in — an empty/undefined genreId means "show every genre".
   if (options.genreId != null) {
     params.set("with_genres", String(options.genreId));
+  }
+
+  // TMDB's discover endpoint accepts full dates ("gte"/"lte" = "greater
+  // than or equal" / "less than or equal"), so a year like 2010 has to be
+  // turned into "2010-01-01" (start of that year) or "2010-12-31" (end of
+  // that year) to act as a proper year-range filter.
+  if (options.yearFrom != null) {
+    params.set("primary_release_date.gte", `${options.yearFrom}-01-01`);
+  }
+  if (options.yearTo != null) {
+    params.set("primary_release_date.lte", `${options.yearTo}-12-31`);
+  }
+  // Overrides the flat "50" vote-count threshold above ONLY when the user
+  // actually asked for a minimum rating, since a real minRating filter is a
+  // stronger, more deliberate signal than the anti-fake-rating default.
+  if (options.minRating != null) {
+    params.set("vote_average.gte", String(options.minRating));
   }
 
   const response = await fetch(`${BASE_URL}/discover/movie?${params.toString()}`);

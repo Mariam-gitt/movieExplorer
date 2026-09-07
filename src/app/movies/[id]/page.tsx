@@ -1,8 +1,13 @@
 import Image from "next/image";
+import type { Metadata } from "next";
 import MovieGrid from "@/components/MovieGrid";
 import SectionHeading from "@/components/SectionHeading";
 import TrailerButton from "@/components/TrailerButton";
 import ShareButton from "@/components/ShareButton";
+// RECENTLY VIEWED (new): an invisible Client Component that records "the
+// user opened this movie" into localStorage — see its own file for why the
+// side effect lives in a separate component instead of directly here.
+import RecordRecentlyViewed from "@/components/RecordRecentlyViewed";
 import {
   getMovieCredits,
   getMovieDetails,
@@ -17,6 +22,58 @@ type MovieDetailsPageProps = {
     id: string;
   }>;
 };
+
+// SEO METADATA (new): Next.js calls this function on the SERVER, before the
+// page itself renders, and uses whatever it returns to fill in the
+// browser tab's <title>, the <meta description> tag search engines read,
+// and Open Graph tags (the data Facebook/Twitter/WhatsApp/etc. read to
+// build a rich preview card when someone shares this page's link). This is
+// what makes every movie's page have its OWN title/description instead of
+// every page sharing the one generic "Movie Explorer" title set in
+// layout.tsx.
+export async function generateMetadata({
+  params,
+}: MovieDetailsPageProps): Promise<Metadata> {
+  const { id } = await params;
+
+  try {
+    const movie = await getMovieDetails(id);
+    const year = getMovieYear(movie.release_date);
+    const poster = posterUrl(movie.poster_path, "w500");
+    // Search engines/link previews only show the first ~160 characters of a
+    // description anyway, and TMDB overviews can run much longer than
+    // that — trimming it here keeps the tag itself a sensible size instead
+        // of shipping a huge, mostly-invisible chunk of text in the page's <head>.
+    const description = movie.overview
+      ? movie.overview.slice(0, 160)
+      : `Details, cast, and trailer for ${movie.title} on Movie Explorer.`;
+
+    return {
+      // No manual "| Movie Explorer" suffix here — the root layout's
+      // "title.template" (see layout.tsx) appends that automatically to
+      // whatever string this page returns, so adding it again here would
+      // duplicate it into "... | Movie Explorer | Movie Explorer".
+      title: `${movie.title}${year ? ` (${year})` : ""}`,
+      description,
+      // "openGraph" fields are what a chat app or social network reads to
+      // build a link-preview card (image + title + description) — without
+      // this, sharing a movie's link would show only a bare URL.
+      openGraph: {
+        title: movie.title,
+        description,
+        images: poster ? [{ url: poster }] : undefined,
+        type: "video.movie",
+      },
+    };
+  } catch {
+    // If TMDB is unreachable here, don't let a metadata failure crash the
+    // whole page — fall back to a generic (but still valid) title.
+    return {
+      title: "Movie Explorer",
+      description: "Discover your next favorite movie.",
+    };
+  }
+}
 
 export default async function MovieDetailsPage({
   params,
@@ -66,6 +123,12 @@ export default async function MovieDetailsPage({
 
   return (
     <main>
+      {/* Invisible — renders no DOM. Its only job is to save this movie's id
+          into the "recently viewed" localStorage list on mount, which is
+          what powers RecentlyViewedPreview.tsx on the homepage and the full
+          /recently-viewed page. */}
+      <RecordRecentlyViewed movieId={movie.id} />
+
       {/* HERO: a tall, full-strength backdrop image with the poster
           overlapping its bottom edge — the negative margin ("-mt-28" etc.)
           on the row below is what pulls the poster up so it visually sits

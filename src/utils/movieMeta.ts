@@ -59,3 +59,66 @@ export function backdropUrl(path: string | null, size = "w1280") {
   if (!path) return null;
   return `https://image.tmdb.org/t/p/${size}${path}`;
 }
+
+// ADVANCED FILTERING / SORT (new) — used specifically for TMDB's plain
+// SEARCH endpoint, which (unlike "discover") has no built-in support for
+// year-range, minimum-rating, or sort-order query params. discoverMovies()
+// in movieApi.ts asks TMDB to do this filtering/sorting itself, so pages
+// using it never need these helpers; the /search page, which can only use
+// TMDB's basic search-by-title endpoint, applies these functions itself
+// AFTER fetching, to get the same filter/sort options on search results.
+export function filterMoviesByYearAndRating(
+  movies: Movie[],
+  filters: { yearFrom?: number; yearTo?: number; minRating?: number }
+): Movie[] {
+  return movies.filter((movie) => {
+    const year = getMovieYear(movie.release_date);
+    const yearNumber = year ? Number(year) : null;
+
+    // A movie with no known release year fails a year-range filter (there's
+    // nothing to compare against), but should still pass through untouched
+    // when NO year filter is active at all.
+    if (filters.yearFrom != null) {
+      if (yearNumber == null || yearNumber < filters.yearFrom) return false;
+    }
+    if (filters.yearTo != null) {
+      if (yearNumber == null || yearNumber > filters.yearTo) return false;
+    }
+    if (filters.minRating != null) {
+      if (movie.vote_average < filters.minRating) return false;
+    }
+    return true;
+  });
+}
+
+// Mirrors the "value" strings used by SortSelect.tsx (e.g.
+// "vote_average.desc") so the exact same dropdown options work whether the
+// sorting happens on TMDB's server (discoverMovies) or here, in the
+// browser/server, on an already-fetched array (search results).
+export function sortMovies(movies: Movie[], sortBy?: string): Movie[] {
+  if (!sortBy) return movies;
+
+  // .slice() copies the array first — sorting IN PLACE would mutate the
+  // array the caller passed in, which could cause confusing bugs if they
+  // still hold a reference to the original, unsorted array elsewhere.
+  const sorted = movies.slice();
+
+  switch (sortBy) {
+    case "vote_average.desc":
+      return sorted.sort((a, b) => b.vote_average - a.vote_average);
+    case "primary_release_date.desc":
+      return sorted.sort((a, b) =>
+        (b.release_date || "").localeCompare(a.release_date || "")
+      );
+    case "primary_release_date.asc":
+      return sorted.sort((a, b) =>
+        (a.release_date || "").localeCompare(b.release_date || "")
+      );
+    case "popularity.desc":
+      return sorted.sort(
+        (a, b) => (b.popularity ?? 0) - (a.popularity ?? 0)
+      );
+    default:
+      return sorted;
+  }
+}

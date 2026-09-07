@@ -26,9 +26,32 @@ const body = Inter({
 });
 
 // This object is read by Next.js to fill in the <title> and <meta description> tags.
+// Every other page in the app can override just the fields it cares about
+// via its own "generateMetadata" export (see e.g. movies/[id]/page.tsx) —
+// Next.js automatically MERGES that page-specific metadata on top of this
+// root layout's defaults, so a page only overriding "title" still inherits
+// "description"/"openGraph" etc. from here unless it also overrides those.
 export const metadata: Metadata = {
-  title: "Movie Explorer",
+  // "%s" is replaced by whatever "title" a page sets via generateMetadata —
+  // e.g. a page with title "Inception" renders as "Inception | Movie
+  // Explorer" in the browser tab, without every page having to repeat the
+  // "| Movie Explorer" suffix itself.
+  title: {
+    default: "Movie Explorer",
+    template: "%s | Movie Explorer",
+  },
   description: "Discover your next favorite movie.",
+  // "metadataBase" is the base URL Next.js uses to turn any RELATIVE image
+  // path in openGraph.images (none currently — this app's OG images are
+  // always full TMDB URLs) into an absolute one. Setting it removes a
+  // build-time warning and future-proofs the app for any relative image
+  // paths added later. Replace this with the app's real deployed domain
+  // when one exists.
+  metadataBase: new URL("http://localhost:3000"),
+  openGraph: {
+    siteName: "Movie Explorer",
+    type: "website",
+  },
 };
 
 // The RootLayout wraps EVERY page in the app — it's the one place the navbar,

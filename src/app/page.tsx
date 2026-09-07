@@ -11,6 +11,10 @@ import MovieGrid from "@/components/MovieGrid";
 import SectionHeading from "@/components/SectionHeading";
 import FavoriteButton from "@/components/FavoriteButton";
 import FavoritesPreview from "@/components/FavoritesPreview";
+// RECENTLY VIEWED (new): the compact "row of poster thumbnails" preview,
+// same idea as FavoritesPreview above but backed by utils/recentlyViewed.ts
+// instead of utils/favorites.ts.
+import RecentlyViewedPreview from "@/components/RecentlyViewedPreview";
 import { getMovieYear, posterUrl, backdropUrl } from "@/utils/movieMeta";
 import type { Movie, MovieResponse } from "@/types/movie";
 
@@ -228,6 +232,10 @@ export default async function Home() {
 
       {/* Your saved movies (if any) — renders nothing when the list is empty. */}
       <FavoritesPreview />
+
+      {/* Movies you've recently opened the details page for (if any) —
+          renders nothing when the history is empty. */}
+      <RecentlyViewedPreview />
 
       {/* Each section below gets a matching "id" so the sidebar icons and
           navbar category tabs (which link to "/#trending" etc.) scroll

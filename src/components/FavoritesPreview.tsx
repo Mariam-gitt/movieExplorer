@@ -34,9 +34,10 @@ export default function FavoritesPreview() {
     // scannable row instead of a huge list.
     const idsToShow = favoriteIds.slice(-6).reverse();
 
-    // Nothing to fetch — leave "movies" untouched here; the early return in
-    // the render below already handles the "no favorites" case, so there's
-    // no need to synchronously update state from inside this effect.
+    // Nothing to fetch. Note there's no setMovies([]) here: the render
+    // below already returns null whenever favoriteIds.length === 0,
+    // regardless of "movies" — so there's nothing to synchronize by
+    // setting state from inside this effect for that case.
     if (idsToShow.length === 0) return;
 
     // "cancelled" guards against a React warning that happens if the
