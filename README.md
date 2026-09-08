@@ -435,8 +435,6 @@ Future enhancements planned:
 
 - [ ] User authentication & personal watchlists
 - [ ] Movie ratings & user reviews
-- [ ] Advanced filtering (release year, IMDb rating, runtime)
-- [ ] Dark mode theme toggle
 - [ ] Internationalization (i18n) for multiple languages
 - [ ] Recommendation engine based on favorites
 - [ ] Mobile app (React Native)
