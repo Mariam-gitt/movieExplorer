@@ -57,22 +57,62 @@ toggle" (viewing is automatic, not something the user clicks).
 **File:** `components/SortSelect.tsx` (already existed for `/genres`,
 generalized here).
 
+### Important code
+
+```ts
+export function recordMovieViewed(movieId: number) {
+   const current = getRecentlyViewedIds();
+
+   // Put the newest movie first and remove an older duplicate.
+   const next = [movieId, ...current.filter((id) => id !== movieId)].slice(0, 20);
+
+   localStorage.setItem("recently-viewed", JSON.stringify(next));
+
+   // Tell components in this tab to read the new list immediately.
+   window.dispatchEvent(new Event("recently-viewed-changed"));
+}
+```
+
+**Simple logic:** When a movie page opens, its id goes to the front of the
+list. If the id was already there, it is moved instead of duplicated. Only
+the latest 20 ids are kept. The browser event tells the visible lists to
+refresh.
+
 The only change: it used to hardcode `router.push('/genres?...')`. It now
 calls `usePathname()` and pushes to whatever page it's actually rendered on
 — which is what let the exact same component be reused, unmodified, on the
 `/search` page too.
-
 ## 4. Advanced filtering (year range + minimum rating)
 
-**File:** `components/FilterPanel.tsx` (new), `utils/movieMeta.ts`
 (`filterMoviesByYearAndRating`), `services/movieApi.ts` (`discoverMovies`
 gained `yearFrom`/`yearTo`/`minRating` options).
 
 Two different filtering strategies exist, depending on which TMDB endpoint
 a page uses:
-
 - **`/genres` (uses TMDB's `discover` endpoint):** TMDB itself supports
   `primary_release_date.gte`/`.lte` and `vote_average.gte` query params, so
+
+### Important code
+
+```ts
+export async function generateMetadata({ params }: PageProps) {
+   const movie = await getMovieDetails(params.id);
+
+   return {
+      title: movie.title,
+      description: movie.overview,
+      openGraph: {
+         title: movie.title,
+         description: movie.overview,
+         images: movie.poster_path ? [posterUrl(movie.poster_path)] : [],
+      },
+   };
+}
+```
+
+**Simple logic:** Next.js runs `generateMetadata` on the server before the
+page is sent. It fetches the movie, then uses the title, summary, and poster
+to build the browser tab title and social-media preview.
   `discoverMovies()` just adds them to the request. TMDB does the filtering
   — the app never sees unfiltered results at all.
 - **`/search` (uses TMDB's plain `search/movie` endpoint):** this endpoint
@@ -82,6 +122,24 @@ a page uses:
   JavaScript, on the array TMDB already returned.
 
 `FilterPanel` itself doesn't know or care which strategy is in play — like
+
+### Important code
+
+```tsx
+const pathname = usePathname();
+const searchParams = useSearchParams();
+const router = useRouter();
+
+function changeSort(value: string) {
+   const params = new URLSearchParams(searchParams.toString());
+   params.set("sort", value);
+   router.push(`${pathname}?${params.toString()}`);
+}
+```
+
+**Simple logic:** The component finds the page it is currently on, keeps the
+existing URL filters, changes only `sort`, and navigates to the new URL. This
+lets one dropdown work on both genres and search pages.
 `SortSelect`, its only job is reading/writing the URL's `yearFrom`/`yearTo`/
 `minRating` params (with a 500ms debounce on the year inputs, so each
 keystroke doesn't trigger a navigation).
@@ -91,11 +149,9 @@ keystroke doesn't trigger a navigation).
 Not a separate file — this is the *pattern* every control above already
 follows: `GenreChips`, `SortSelect`, and `FilterPanel` all read the current
 value from `useSearchParams()` and write new values via
-`router.push(pathname + '?' + newParams)`, always copying the existing
 params first. This means:
 - Refreshing the page shows the exact same filtered/sorted view.
 - Sharing a `/genres?genre=28&sort=vote_average.desc&minRating=7` link
-  reproduces that exact view for anyone else.
 - The page components (`genres/page.tsx`, `search/page.tsx`) read these same
   params server-side (as the `searchParams` prop) to run the actual
   TMDB query — the URL is the single source of truth on both ends.
@@ -105,6 +161,55 @@ params first. This means:
 **Files:** `components/InfiniteMovieGrid.tsx` (new),
 `app/api/movies/discover/route.ts`, `app/api/movies/search/route.ts` (new
 API routes), `services/movieApi.ts` (`page` param added to `discoverMovies`
+
+### Important code
+
+```ts
+export function filterMoviesByYearAndRating(
+   movies: Movie[],
+   filters: { yearFrom?: number; yearTo?: number; minRating?: number }
+) {
+   return movies.filter((movie) => {
+      const year = movie.release_date
+         ? Number(movie.release_date.slice(0, 4))
+         : null;
+
+      // A movie must pass every active condition.
+      if (filters.yearFrom != null && (year == null || year < filters.yearFrom)) {
+         return false;
+      }
+      if (filters.yearTo != null && (year == null || year > filters.yearTo)) {
+         return false;
+      }
+      if (filters.minRating != null && movie.vote_average < filters.minRating) {
+         return false;
+      }
+      return true;
+   });
+}
+```
+
+**Simple logic:** Each movie is checked against the filters. A movie is kept
+only when its year and rating satisfy all active rules. Missing release dates
+cannot pass an active year filter because there is no year to compare.
+
+For the genres page, TMDB performs this work through query parameters:
+
+```ts
+if (options.yearFrom != null) {
+   params.set("primary_release_date.gte", `${options.yearFrom}-01-01`);
+}
+if (options.yearTo != null) {
+   params.set("primary_release_date.lte", `${options.yearTo}-12-31`);
+}
+if (options.minRating != null) {
+   params.set("vote_average.gte", String(options.minRating));
+}
+```
+
+**Simple logic:** The app sends the filters to TMDB for discover requests.
+For normal searches, TMDB cannot filter by year or rating, so the app filters
+the returned array itself.
 and `searchMovies`).
 
 Flow:
@@ -112,12 +217,29 @@ Flow:
    **page 1** as before and renders it immediately — no loading spinner for
    the first screenful.
 2. That page 1 array, plus the total page count TMDB reported, is passed
-   into `<InfiniteMovieGrid>` as props.
-3. `InfiniteMovieGrid` places an invisible `<div>` ("sentinel") right after
    the grid and watches it with an `IntersectionObserver` — a browser API
-   that reports when an element scrolls into view, far cheaper than
    listening to every `scroll` event manually.
 4. When the sentinel becomes visible (with a 400px head start, so loading
+
+### Important code
+
+```tsx
+function updateParams(updates: Record<string, string | null>) {
+   const params = new URLSearchParams(searchParams.toString());
+
+   for (const [key, value] of Object.entries(updates)) {
+      // Empty values remove a filter instead of creating "filter=".
+      if (!value) params.delete(key);
+      else params.set(key, value);
+   }
+
+   router.push(`${pathname}?${params.toString()}`);
+}
+```
+
+**Simple logic:** The URL stores the selected filters. Controls change the
+URL, and the page reads the URL to fetch the matching movies. Refreshing or
+sharing the link therefore keeps the same results.
    finishes before the user notices a gap), it `fetch()`es the next page
    from a **same-origin API route** (`/api/movies/discover` or
    `/api/movies/search`) — never directly from the browser to TMDB, keeping
@@ -130,6 +252,38 @@ Flow:
    *brand new* `InfiniteMovieGrid` instance instead of appending onto
    results from the previous filter selection.
 
+### Important code
+
+```tsx
+const loadNextPage = useCallback(async () => {
+  const nextPage = page + 1;
+  const response = await fetch(
+    `${endpoint}?${queryString}&page=${nextPage}`
+  );
+  const data: MovieResponse = await response.json();
+
+  // Add the new page after the movies already shown.
+  setMovies((current) => [...current, ...data.results]);
+  setPage(nextPage);
+}, [endpoint, page, queryString]);
+
+useEffect(() => {
+  const observer = new IntersectionObserver((entries) => {
+    if (entries[0]?.isIntersecting && !loading && !finished) {
+      loadNextPage();
+    }
+  });
+
+  if (sentinelRef.current) observer.observe(sentinelRef.current);
+  return () => observer.disconnect();
+}, [finished, loading, loadNextPage]);
+```
+
+**Simple logic:** A small invisible element sits below the movie cards. When
+the user gets near it, the browser calls `loadNextPage`. The next page is
+fetched and appended, so the old cards stay on screen. The observer stops
+when all TMDB pages have been loaded.
+
 ## 7. Keyboard-friendly search
 
 **File:** `components/SearchBar.tsx` (rewritten).
@@ -137,21 +291,52 @@ Flow:
 Three separate keyboard behaviours, all in one component:
 
 1. **Global `/` shortcut** — a `window`-level `keydown` listener (added in a
-   `useEffect`) focuses the search input when `/` is pressed anywhere on the
-   page, as long as the user isn't already typing somewhere else.
+    `useEffect`) focuses the search input when `/` is pressed anywhere on the
+    page, as long as the user isn't already typing somewhere else.
 2. **Suggestions dropdown** — as the user types, a debounced (300ms) fetch
-   to `/api/movies/search` returns up to 6 matching titles, shown in a
-   dropdown below the input.
+    to `/api/movies/search` returns up to 6 matching titles, shown in a
+    dropdown below the input.
 3. **Arrow-key navigation** — `ArrowDown`/`ArrowUp` move a highlighted index
-   through the suggestions (wrapping around both ends), `Enter` opens the
-   highlighted suggestion (or runs a normal search if nothing's
-   highlighted), and `Escape` closes the dropdown (or clears the box if it's
-   already closed).
+    through the suggestions (wrapping around both ends), `Enter` opens the
+    highlighted suggestion (or runs a normal search if nothing's
+    highlighted), and `Escape` closes the dropdown (or clears the box if it's
+    already closed).
 
 The whole thing follows the **ARIA "combobox" pattern** — `role="combobox"`
 on the input, `role="listbox"`/`role="option"` on the dropdown, and
 `aria-activedescendant` pointing at whichever option is highlighted — so a
 screen reader announces the same information a sighted keyboard user sees.
+
+### Important code
+
+```tsx
+function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+   if (event.key === "ArrowDown" && suggestions.length > 0) {
+      event.preventDefault();
+      setHighlighted((current) => (current + 1) % suggestions.length);
+   }
+
+   if (event.key === "ArrowUp" && suggestions.length > 0) {
+      event.preventDefault();
+      setHighlighted((current) =>
+         current <= 0 ? suggestions.length - 1 : current - 1
+      );
+   }
+
+   if (event.key === "Enter") {
+      const selected = suggestions[highlighted];
+      if (selected) router.push(`/movies/${selected.id}`);
+      else router.push(`/search?q=${encodeURIComponent(query)}`);
+   }
+
+   if (event.key === "Escape") setSuggestions([]);
+}
+```
+
+**Simple logic:** The arrow keys choose a suggestion, Enter opens the chosen
+movie, and Escape closes the list. If no suggestion is selected, Enter runs a
+normal text search. The ARIA attributes give the same state to screen-reader
+users.
 
 ---
 

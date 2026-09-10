@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
   const minRating = searchParams.get("minRating");
   const page = searchParams.get("page");
 
+
   try {
     // Re-use the exact same discoverMovies() helper the server-rendered
     // /genres page already calls — one source of truth for how the TMDB

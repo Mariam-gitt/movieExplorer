@@ -9,10 +9,16 @@ import type {
 // Store the base URL of the TMDB API in one constant.
 const BASE_URL = "https://api.themoviedb.org/3";
 
+// Store the TMDB API key in ONE constant, read from ONE env variable.
+// Every function below uses this constant instead of reading
+// process.env directly — so if the env var name ever changes again,
+// this is the only line that needs editing.
+const API_KEY = process.env.TMDB_API_KEY;
+
 // Fetch popular movies from TMDB.
 export async function getPopularMovies(): Promise<MovieResponse> {
   const response = await fetch(
-    `${BASE_URL}/movie/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`
+    `${BASE_URL}/movie/popular?api_key=${API_KEY}`
   );
 
   if (!response.ok) {
@@ -25,7 +31,7 @@ export async function getPopularMovies(): Promise<MovieResponse> {
 // Fetch movies that are currently trending.
 export async function getTrendingMovies(): Promise<MovieResponse> {
   const response = await fetch(
-    `${BASE_URL}/trending/movie/week?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`
+    `${BASE_URL}/trending/movie/week?api_key=${API_KEY}`
   );
 
   if (!response.ok) {
@@ -40,7 +46,7 @@ export async function getTrendingMovies(): Promise<MovieResponse> {
 // Fetch top-rated movies from TMDB.
 export async function getTopRatedMovies(): Promise<MovieResponse> {
   const response = await fetch(
-    `${BASE_URL}/movie/top_rated?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`
+    `${BASE_URL}/movie/top_rated?api_key=${API_KEY}`
   );
 
   if (!response.ok) {
@@ -59,7 +65,7 @@ export async function searchMovies(
   page = 1
 ): Promise<MovieResponse> {
   const params = new URLSearchParams({
-    api_key: process.env.NEXT_PUBLIC_TMDB_API_KEY ?? "",
+    api_key: API_KEY ?? "",
     query,
     page: String(page),
   });
@@ -80,7 +86,7 @@ export async function getMovieDetails(
   // On client side, use the API route to avoid CORS issues
   const url = typeof window !== "undefined" 
     ? `/api/movies/${id}`
-    : `${BASE_URL}/movie/${id}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`;
+    : `${BASE_URL}/movie/${id}?api_key=${API_KEY}`;
 
   const response = await fetch(url);
 
@@ -96,7 +102,7 @@ export async function getMovieDetails(
 // Fetch movies that are going to be released soon.
 export async function getUpcomingMovies(): Promise<MovieResponse> {
   const response = await fetch(
-    `${BASE_URL}/movie/upcoming?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`
+    `${BASE_URL}/movie/upcoming?api_key=${API_KEY}`
   );
 
   if (!response.ok) {
@@ -109,7 +115,7 @@ export async function getUpcomingMovies(): Promise<MovieResponse> {
 // Fetch movies that are currently playing.
 export async function getNowPlayingMovies(): Promise<MovieResponse> {
   const response = await fetch(
-    `${BASE_URL}/movie/now_playing?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`
+    `${BASE_URL}/movie/now_playing?api_key=${API_KEY}`
   );
 
   if (!response.ok) {
@@ -124,7 +130,7 @@ export async function getMovieCredits(
   id: string
 ): Promise<MovieCredits> {
   const response = await fetch(
-    `${BASE_URL}/movie/${id}/credits?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`
+    `${BASE_URL}/movie/${id}/credits?api_key=${API_KEY}`
   );
 
   if (!response.ok) {
@@ -139,7 +145,7 @@ export async function getSimilarMovies(
   id: string
 ): Promise<MovieResponse> {
   const response = await fetch(
-    `${BASE_URL}/movie/${id}/similar?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`
+    `${BASE_URL}/movie/${id}/similar?api_key=${API_KEY}`
   );
 
   if (!response.ok) {
@@ -179,7 +185,7 @@ export async function discoverMovies(options: {
   // URLSearchParams builds a query string ("key=value&key2=value2") for us,
   // so we don't have to manually glue strings together with "&" and "=".
   const params = new URLSearchParams({
-    api_key: process.env.NEXT_PUBLIC_TMDB_API_KEY ?? "",
+    api_key: API_KEY ?? "",
     sort_by: options.sortBy ?? "popularity.desc",
     // TMDB ignores runtime-less/rating-less entries by default when sorting
     // by rating, but this threshold keeps obscure zero-vote titles (which
@@ -225,7 +231,7 @@ export async function discoverMovies(options: {
 // trailer to embed on the movie details page).
 export async function getMovieVideos(id: string): Promise<MovieVideosResponse> {
   const response = await fetch(
-    `${BASE_URL}/movie/${id}/videos?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`
+    `${BASE_URL}/movie/${id}/videos?api_key=${API_KEY}`
   );
 
   if (!response.ok) {

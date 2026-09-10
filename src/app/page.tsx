@@ -106,7 +106,7 @@ export default async function Home() {
           <p className="mt-2 max-w-xl text-sm text-ink-soft">
             This usually means the TMDB API key isn&apos;t set. Add{" "}
             <code className="rounded bg-paper px-1.5 py-0.5 text-ink">
-              NEXT_PUBLIC_TMDB_API_KEY
+              TMDB_API_KEY
             </code>{" "}
             to a <code className="rounded bg-paper px-1.5 py-0.5 text-ink">.env.local</code> file
             at the project root, then restart the dev server.

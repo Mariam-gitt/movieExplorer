@@ -60,6 +60,7 @@ describe("FavoriteButton", () => {
 
     // Also check the actual side effect: the movie's id really did get
     // written to localStorage, not just the button's visual state.
+
     expect(JSON.parse(localStorage.getItem("favorites") ?? "[]")).toEqual([42]);
   });
 
