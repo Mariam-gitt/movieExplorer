@@ -1,5 +1,15 @@
 "use client"; // Needs localStorage + React state, so it has to run in the browser.
 
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";  
+
+
+
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -70,33 +80,45 @@ export default function FavoritesPreview() {
   if (favoriteIds.length === 0 || !movies || movies.length === 0) return null;
 
   return (
-    <section aria-label="Your favorites" className="mb-10">
-      <h2 className="mb-3 font-display text-lg font-bold text-ink">Your Favorites</h2>
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {movies.map((movie) => (
-          <Link
-            key={movie.id}
-            href={`/movies/${movie.id}`}
-            className="flex w-56 shrink-0 items-center gap-3 rounded-xl border border-rule bg-paper-raised p-2 transition hover:border-gold"
-          >
-            <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-stamp">
-              {posterUrl(movie.poster_path, "w185") ? (
-                <Image
-                  src={posterUrl(movie.poster_path, "w185")!}
-                  alt=""
-                  fill
-                  sizes="48px"
-                  className="object-cover"
-                />
-              ) : null}
-            </div>
-            <div className="min-w-0">
-              <p className="line-clamp-1 text-sm font-semibold text-ink">{movie.title}</p>
-              <p className="text-xs text-ink-soft">{getMovieYear(movie.release_date) ?? "—"}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </section>
+    <Carousel>
+  <CarouselContent>
+    {movies.map((movie) => (
+      <CarouselItem
+        key={movie.id}
+        className="basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/6"
+      >
+        <Link
+          href={`/movies/${movie.id}`}
+          className="flex flex-col gap-2 rounded-xl border border-rule bg-paper-raised p-2 transition hover:border-gold"
+        >
+          <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-stamp">
+            {posterUrl(movie.poster_path, "w185") ? (
+              <Image
+                src={posterUrl(movie.poster_path, "w185")!}
+                alt=""
+                fill
+                sizes="48px"
+                className="object-cover"
+              />
+            ) : null}
+          </div>
+
+          <div className="min-w-0">
+            <p className="line-clamp-1 text-sm font-semibold text-ink">
+              {movie.title}
+            </p>
+
+            <p className="text-xs text-ink-soft">
+              {getMovieYear(movie.release_date) ?? "—"}
+            </p>
+          </div>
+        </Link>
+      </CarouselItem>
+    ))}
+  </CarouselContent>
+
+  <CarouselPrevious />
+  <CarouselNext />
+</Carousel>
   );
 }

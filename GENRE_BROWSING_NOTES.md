@@ -3,7 +3,7 @@
 ## What was built
 A new page at `/genres` that lets you filter movies by genre and sort order,
 where BOTH the selected genre and sort order live in the URL itself
-(e.g. `/genres?genre=28&sort=vote_average.desc`) instead of in React state.
+(e.g. `/genres?genre=28&sort=vote_average.desc`) instead of in React state.   
 
 Files touched:
 - `src/services/movieApi.ts` — added `discoverMovies()`, using TMDB's
@@ -17,7 +17,7 @@ Files touched:
 - `src/components/SortSelect.tsx` — new, sort-order dropdown.
 - `src/components/Navbar.tsx` — added a "Genres" nav link.
 
-## Why two different approaches for two similar-looking controls?
+## Why two different approaches for two similar-looking controls? 
 
 This is the most important thing to understand and explain clearly:
 

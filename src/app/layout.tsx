@@ -3,13 +3,17 @@ import type { Metadata } from "next";
 // next/font/google downloads and self-hosts Google Fonts at build time (faster + more
 // private than linking to Google's servers directly). Plus_Jakarta_Sans is a bold,
 // rounded font for headings; Inter is a clean, highly-readable font for body text.
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter, Geist } from "next/font/google";
 // The global stylesheet with all of our theme colours (see globals.css).
 import "./globals.css";
 // The top navigation bar (logo, search, category tabs).
 import Navbar from "@/components/Navbar";
 // The floating icon rail on the left edge of the screen (desktop only).
 import Sidebar from "@/components/Sidebar";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 // Load the display font and expose it as the CSS variable "--font-display".
 const display = Plus_Jakarta_Sans({
@@ -65,7 +69,7 @@ export default function RootLayout({
     // Attach both font CSS variables to the <html> tag so they're available everywhere below.
     // The theme script may set `data-theme` before hydration, so React should ignore that
     // expected server/client mismatch instead of treating it as an error.
-    <html lang="en" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
+    <html lang="en" className={cn(display.variable, body.variable, "font-sans", geist.variable)} suppressHydrationWarning>
       <head>
         {/* This tiny script runs BEFORE the page paints anything (it's a
             plain <script>, not a React component, so there's no waiting for

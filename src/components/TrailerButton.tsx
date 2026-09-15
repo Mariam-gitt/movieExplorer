@@ -54,7 +54,7 @@ export default function TrailerButton({ videoKey, movieTitle }: TrailerButtonPro
           role="dialog"
           aria-modal="true"
           aria-label={`${movieTitle} trailer`}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
           // Clicking the dark overlay (but not the video itself) closes the modal.
           onClick={() => setIsOpen(false)}
         >
