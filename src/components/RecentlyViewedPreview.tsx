@@ -1,5 +1,15 @@
 "use client"; // Needs localStorage + React state, so it has to run in the browser.
 
+import {
+  Carousel,
+  CarouselContent,  
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+
+
+
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -79,52 +89,65 @@ export default function RecentlyViewedPreview() {
   // render nothing rather than an empty, confusing box.
   if (recentIds.length === 0 || !movies || movies.length === 0) return null;
 
-  return (
-    <section aria-label="Recently viewed movies" className="mb-10">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-lg font-bold text-ink">
-          Recently Viewed
-        </h2>
-        {/* Only worth linking to the full history page if there's more
-            hiding beyond this 8-item preview row. */}
-        {recentIds.length > 8 ? (
-          <Link
-            href="/recently-viewed"
-            className="text-sm font-semibold text-gold hover:underline"
-          >
-            View all
-          </Link>
-        ) : null}
-      </div>
-      <div className="flex gap-3 overflow-x-auto pb-2">
+  
+    return (
+  <section aria-label="Recently viewed movies" className="mb-10">
+    <div className="mb-3 flex items-center justify-between">
+      <h2 className="font-display text-lg font-bold text-ink">
+        Recently Viewed
+      </h2>
+
+      {recentIds.length > 8 ? (
+        <Link
+          href="/recently-viewed"
+          className="text-sm font-semibold text-gold hover:underline"
+        >
+          View all
+        </Link>
+      ) : null}
+    </div>
+
+    <Carousel className="w-full">
+      <CarouselContent className="-ml-3">
         {movies.map((movie) => (
-          <Link
+          <CarouselItem
             key={movie.id}
-            href={`/movies/${movie.id}`}
-            className="flex w-56 shrink-0 items-center gap-3 rounded-xl border border-rule bg-paper-raised p-2 transition hover:border-gold"
+            className="basis-auto pl-3"
           >
-            <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-stamp">
-              {posterUrl(movie.poster_path, "w185") ? (
-                <Image
-                  src={posterUrl(movie.poster_path, "w185")!}
-                  alt=""
-                  fill
-                  sizes="48px"
-                  className="object-cover"
-                />
-              ) : null}
-            </div>
-            <div className="min-w-0">
-              <p className="line-clamp-1 text-sm font-semibold text-ink">
-                {movie.title}
-              </p>
-              <p className="text-xs text-ink-soft">
-                {getMovieYear(movie.release_date) ?? "—"}
-              </p>
-            </div>
-          </Link>
+            <Link
+              href={`/movies/${movie.id}`}
+              className="flex w-64 items-center gap-3 rounded-xl border border-rule bg-paper-raised p-3 transition hover:border-gold"
+            >
+              <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-lg bg-stamp">
+                {posterUrl(movie.poster_path, "w185") ? (
+                  <Image
+                    src={posterUrl(movie.poster_path, "w185")!}
+                    alt=""
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                  />
+                ) : null}
+              </div>
+
+              <div className="min-w-0">
+                <p className="line-clamp-2 text-sm font-semibold text-ink">
+                  {movie.title}
+                </p>
+
+                <p className="text-xs text-ink-soft">
+                  {getMovieYear(movie.release_date) ?? "—"}
+                </p>
+              </div>
+            </Link>
+          </CarouselItem>
         ))}
-      </div>
-    </section>
-  );
+      </CarouselContent>
+
+      <CarouselPrevious />
+      <CarouselNext />
+    </Carousel>
+  </section>
+);
+  
 }
