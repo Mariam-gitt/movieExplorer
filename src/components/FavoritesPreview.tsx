@@ -80,45 +80,58 @@ export default function FavoritesPreview() {
   if (favoriteIds.length === 0 || !movies || movies.length === 0) return null;
 
   return (
-    <Carousel>
-  <CarouselContent>
-    {movies.map((movie) => (
-      <CarouselItem
-        key={movie.id}
-        className="basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/6"
-      >
-        <Link
-          href={`/movies/${movie.id}`}
-          className="flex flex-col gap-2 rounded-xl border border-rule bg-paper-raised p-2 transition hover:border-gold"
-        >
-          <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-stamp">
-            {posterUrl(movie.poster_path, "w185") ? (
-              <Image
-                src={posterUrl(movie.poster_path, "w185")!}
-                alt=""
-                fill
-                sizes="48px"
-                className="object-cover"
-              />
-            ) : null}
-          </div>
+  <section aria-label="Your favorites" className="mb-10">
+    {/* Section heading */}
+    <h2 className="mb-3 font-display text-lg font-bold text-ink">
+      Your Favorites
+    </h2>
 
-          <div className="min-w-0">
-            <p className="line-clamp-1 text-sm font-semibold text-ink">
-              {movie.title}
-            </p>
+    {/* Shadcn carousel wrapper */}
+    <Carousel className="w-full">
+      {/* The actual row that moves horizontally */}
+      <CarouselContent className="-ml-3">
+        {movies.map((movie) => (
+          <CarouselItem
+            key={movie.id}
+            className="basis-auto pl-3"
+          >
+            {/* One movie card */}
+            <Link
+              href={`/movies/${movie.id}`}
+              className="flex w-64 items-center gap-3 rounded-xl border border-rule bg-paper-raised p-3 transition hover:border-gold"
+            >
+              {/* Movie poster */}
+              <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-lg bg-stamp">
+                {posterUrl(movie.poster_path, "w185") ? (
+                  <Image
+                    src={posterUrl(movie.poster_path, "w185")!}
+                    alt=""
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                  />
+                ) : null}
+              </div>
 
-            <p className="text-xs text-ink-soft">
-              {getMovieYear(movie.release_date) ?? "—"}
-            </p>
-          </div>
-        </Link>
-      </CarouselItem>
-    ))}
-  </CarouselContent>
+              {/* Movie information */}
+              <div className="min-w-0">
+                <p className="line-clamp-2 text-sm font-semibold text-ink">
+                  {movie.title}
+                </p>
 
-  <CarouselPrevious />
-  <CarouselNext />
-</Carousel>
-  );
+                <p className="text-xs text-ink-soft">
+                  {getMovieYear(movie.release_date) ?? "—"}
+                </p>
+              </div>
+            </Link>
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+
+      {/* Carousel navigation */}
+      <CarouselPrevious />
+      <CarouselNext />
+    </Carousel>
+  </section>
+);
 }
