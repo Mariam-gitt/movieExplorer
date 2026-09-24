@@ -4,7 +4,8 @@ A modern, full-featured web application for exploring movies, discovering new fa
 
 **Live Demo:** [movie-explorer-chi-eight.vercel.app](https://movie-explorer-chi-eight.vercel.app)
 
-<img width="1899" height="876" alt="Screenshot (90)" src="https://github.com/user-attachments/assets/3c8e1b84-cefe-4a07-a13a-8650c02b7478" />
+<img width="1900" height="864" alt="Screenshot (92)" src="https://github.com/user-attachments/assets/944f5120-c83f-4671-a3a5-ac39407b247c" />
+
 
 
 ---
